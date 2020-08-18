@@ -14,6 +14,8 @@
 import Caver from "caver-js";
 import {Spinner} from "spin.js";
 import RSA from "./rsa";
+import AESCrypt from "./aes";
+import crypto from "crypto";
 
 const config = {
   rpcURL: 'https://api.baobab.klaytn.net:8651'
@@ -21,7 +23,6 @@ const config = {
 const cav = new Caver(config.rpcURL); // instance
 const agContract = new cav.klay.Contract(DEPLOYED_ABI, DEPLOYED_ADDRESS);
 const App = {
-
   auth: {
     accessType: 'keystore',
     keystore: '',
@@ -35,23 +36,52 @@ const App = {
     id_number: '',
     phone: ''
   },
-
   publicKey:{
     host: '',
     issuer: ''
   }, //공용키
-
   privateKey:{
     host: '',
     issuer: ''
   }, //개인키 //임시로 issuer것도
-
   testData:{
     hostData: '',
     publicKey: ''
   },
-
   cipherHostData: '',
+
+
+  fileDownload: async function(data, filename, type){
+    var file = new Blob([data], {type: type});
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+      window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+      var link = document.createElement("a"),
+          url = URL.createObjectURL(file);
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(function() {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 0);
+    }
+  },
+
+
+  rsaGenerate: async function(hostData){
+    RSA.generate();
+    this.publicKey.host = RSA.getPublicKey();
+    this.privateKey.host = RSA.getPrivateKey();
+    this.cipherHostData = RSA.encrypt(hostData);
+    this.publicKey.issuer = RSA.getPublicKey();
+    this.privateKey.issuer = RSA.getPrivateKey();
+    console.log("Host Public Key : ",this.publicKey.host);
+    console.log("Host Private Key : ",this.privateKey.host);
+    console.log("Issuer Public Key : ",this.publicKey.host);
+    console.log("Issuer Private Key : ",this.privateKey.host);
+  },
 
   /**
    * Start에서 변경할때 꼭 확인
@@ -81,6 +111,17 @@ const App = {
     }
   },
 
+
+
+
+
+
+
+
+
+// ####### Functions - Can't control #######
+// 확인 필요한 코드 - 확인 요청 한 후에 아래로 내릴 것
+
   /**
    * << 컨트랙트 >>
    * Host data를 폼에 맞게 입력하면, 해당 데이터를 contract로 블록에 저장
@@ -96,13 +137,11 @@ const App = {
     this.host.phone = document.getElementById("host_phone").value;
 
     const walletInstance = this.getWallet(); // 로그인된 계정 정보 확인
-    const hostData = { name: this.host.name, id_number: this.host.id_number, phone: this.host.phone };
-
-    await this.rsaGenerate(hostData);
-    await this.fileDownload(this.cipherHostData, 'hostData', 'txt');
-    await this.fileDownload(this.privateKey.host, 'privateKey', 'dll');
-    await this.fileDownload(this.publicKey.host, 'publicKey', 'pem');
-
+    const hostData = this.host.name+'\n'+this.host.id_number+'\n'+this.host.phone;
+    this.rsaGenerate(hostData);
+    this.fileDownload(this.cipherHostData,'hostData','txt');
+    this.fileDownload(this.privateKey.host,'privateKey','dll');
+    this.fileDownload(this.publicKey.host,'publicKey','pem');
     // 추가부분
     if(walletInstance) { // 계정 정보 존재하는지 확인
       if(this.host) {// 정확히 구현필요
@@ -119,71 +158,13 @@ const App = {
               spinner.stop(); // loading ui 종료
               alert(JSON.stringify(this.publicKey) + "로 컨트랙에 저장했습니다."); // 입력된 host 정보
               location.reload();
+              // this.changeUI_Hostdata_has();  //TODO : 확인필요
             })
             .once('error', (error) => { // error가 발생한 경우
               alert(error.message);
             });
       } return; // host 정보 없으면 종료
     }
-  },
-
-
-
-  /* 전역변수로 갖는게 맞을지 모르겠네 */
-  //TODO: 시나리오 맞게 분할할것
-  rsaGenerate: async function(hostData){
-    this.publicKey.host = RSA.getPublicKey();
-    this.privateKey.host = RSA.getPrivateKey();
-
-    this.cipherHostData = RSA.encrypt(hostData);
-    this.publicKey.issuer = RSA.getPublicKey();
-    this.privateKey.issuer = RSA.getPrivateKey();
-    console.log("Host Public Key : ",this.publicKey.host);
-    console.log("Host Private Key : ",this.privateKey.host);
-    console.log("Issuer Public Key : ",this.publicKey.host);
-    console.log("Issuer Private Key : ",this.privateKey.host);
-  },
-
-
-  /**
-   * << 임시 >>
-   * host data file 가져오기
-   * @returns {Promise<void>}
-   */
-  hostDataImport: async function () {
-    const fileReader = new FileReader();
-    fileReader.readAsText(event.target.files[0]); //file 선택
-    fileReader.onload = (event) => { // 선택 후 확인
-      this.testData.hostData = event.target.result;
-      $('#message').text('hostData 로드');
-    }
-  },
-
-  /**
-   * << 임시 >>
-   * publidkey 가져오기
-   * @returns {Promise<void>}
-   */
-  publicKeyImport: async function () {
-    const fileReader = new FileReader();
-    fileReader.readAsText(event.target.files[0]); //file 선택
-    fileReader.onload = (event) => { // 선택 후 확인
-      this.testData.publicKey = event.target.result;
-      $('#message').text('publicKey 로드');
-    }
-  },
-
-  /**
-   * << 임시 >>
-   * 파일 확인
-   * @returns {Promise<void>}
-   */
-  verifyTest: async function (){
-    RSA.init();
-    RSA.importKey(this.testData.publicKey);
-    console.log(RSA.getPublicKey());
-    const decipher = RSA.decrypt(this.testData.hostData);
-    alert("공개키로 복호화된 정보\n" + decipher);
   },
 
   /**
@@ -209,6 +190,22 @@ const App = {
         + '<p>' + '현재 회원수: ' + await this.getHostCountFromContracts() + '</p>');
   },
 
+  /**
+   * << UI >>
+   * hostdata 없는 경우
+   * 로그인부분 없애고 로그아웃 버튼으로
+   * 호스트 정보 입력창 출력
+   */
+  changeUI_Hostdata_none: async function () {
+    $('#loginModal').modal('hide');
+    $('#login').hide();
+    $('#logout').show();
+
+    $('#host_input').show();
+    $('#host_data').hide();
+    $('#host_session_out').hide();
+    $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
+  },
 
   /**
    *  << 컨트랙트 >>
@@ -219,7 +216,6 @@ const App = {
   getHostFromContracts: async function (address) {
     return await agContract.methods.getHost(address).call();
   },
-
   getHostCountFromContracts: async function () {
     return await agContract.methods.getHostCount().call();
   },
@@ -241,39 +237,6 @@ const App = {
     console.log("ik:",this.publicKey.issuer);
     return MyInfo.joined;
   },
-
-
-
-
-
-
-
-// ####### Functions - Can't control #######
-// 확인 필요한 코드 - 확인 요청 한 후에 아래로 내릴 것
-
-
-
-
-
-  /**
-   * << UI >>
-   * hostdata 없는 경우
-   * 로그인부분 없애고 로그아웃 버튼으로
-   * 호스트 정보 입력창 출력
-   */
-  changeUI_Hostdata_none: async function () {
-    $('#loginModal').modal('hide');
-    $('#login').hide();
-    $('#logout').show();
-
-    $('#host_input').show();
-    $('#host_data').hide();
-    $('#host_session_out').hide();
-    $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
-  },
-
-
-
 
   /**
    * << 로그인 >> | << Host Data >>
@@ -310,36 +273,55 @@ const App = {
   },
 
 
-  /**
-   * << 파일 다운로드 >>
-   * download Session
-   * @param data
-   * @param filename
-   * @param type
-   * @returns {Promise<void>}
-   */
-  fileDownload: async function(data, filename, type){
-    const file = new Blob([data], {type: type});
-    if (window.navigator.msSaveOrOpenBlob) // IE10+
-      window.navigator.msSaveOrOpenBlob(file, filename);
-    else { // Others
-      const link = document.createElement('a'),
-          url = URL.createObjectURL(file);
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(function() {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 0);
-    }
-  },
-
-
 // ###### Functions - Can control ######
 //          정확히 작동되는 것만
 
+  //
+  /**
+   * << 로그인 >>
+   * 유효한 키스토어 파일인지 확인
+   */
+  handleImport: async function () {
+    const fileReader = new FileReader();
+    fileReader.readAsText(event.target.files[0]); //file 선택
+    fileReader.onload = (event) => { // 선택 후 확인
+      try{
+        if (!this.checkValidKeystore(event.target.result)){ // 올바른 키스토어 파일인지 확인
+          $('#message').text('유효하지 않은 keystore 파일입니다.');
+          return;
+        } //검증통과
+        this.auth.keystore = event.target.result;
+        $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
+        document.querySelector('#input-password').focus();
+      } catch (event) {
+        $('#message').text('유효하지 않은 keystore 파일입니다.');
+        return;
+      }
+    }
+  },
+  hostDataImport: async function () {
+    const fileReader = new FileReader();
+    fileReader.readAsText(event.target.files[0]); //file 선택
+    fileReader.onload = (event) => { // 선택 후 확인
+      this.testData.hostData = event.target.result;
+      $('#message').text('hostData 로드');
+    }
+  },
+  publicKeyImport: async function () {
+    const fileReader = new FileReader();
+    fileReader.readAsText(event.target.files[0]); //file 선택
+    fileReader.onload = (event) => { // 선택 후 확인
+      this.testData.publicKey = event.target.result;
+      $('#message').text('publicKey 로드');
+    }
+  },
+  verifyTest: async function (){
+    RSA.init();
+    RSA.importKey(this.testData.publicKey);
+    console.log(RSA.getPublicKey());
+    const decipher = RSA.decrypt(this.testData.hostData);
+    alert("공개키로 복호화된 정보\n" + decipher);
+  },
 
   /**
    * << 로그인 >>
@@ -412,27 +394,7 @@ const App = {
     return isValidKeystore;
   },
 
-  /**
-   * << 로그인 >>
-   * 유효한 키스토어 파일인지 확인
-   */
-  handleImport: async function () {
-    const fileReader = new FileReader();
-    fileReader.readAsText(event.target.files[0]); //file 선택
-    fileReader.onload = (event) => { // 선택 후 확인
-      try{
-        if (!this.checkValidKeystore(event.target.result)){ // 올바른 키스토어 파일인지 확인
-          $('#message').text('유효하지 않은 keystore 파일입니다.');
-          return;
-        } //검증통과
-        this.auth.keystore = event.target.result;
-        $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
-        document.querySelector('#input-password').focus();
-      } catch (event) {
-        $('#message').text('유효하지 않은 keystore 파일입니다.');
-      }
-    }
-  },
+
 
   /**
    * << 로그인 >>
