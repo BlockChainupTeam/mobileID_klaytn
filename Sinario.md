@@ -19,7 +19,7 @@
     - Private Key 입력 (미구현)
     1. 로그인 선택 후 private key 입력
    
-2. 이후 로그인한 계정에 다라 Issuer와 Host, Verifier로 나뉨.
+2. 이후 로그인한 계정에 따라 Issuer와 Host, Verifier로 나뉨.
      
 # Senario #1 - Issuer
 - (미구현) 각 신분증에 암호화되지 않은 User type 기입 필요
