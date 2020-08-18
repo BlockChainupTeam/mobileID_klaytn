@@ -323,14 +323,14 @@ const App = {
     if (window.navigator.msSaveOrOpenBlob) // IE10+
       window.navigator.msSaveOrOpenBlob(file, filename);
     else { // Others
-      const _download = document.createElement("_download"),
+      const link = document.createElement('a'),
           url = URL.createObjectURL(file);
-      _download.href = url;
-      _download.download = filename;
-      document.body.appendChild(_download);
-      _download.click();
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
       setTimeout(function() {
-        document.body.removeChild(_download);
+        document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
       }, 0);
     }
