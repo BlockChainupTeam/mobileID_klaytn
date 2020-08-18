@@ -55,3 +55,15 @@
         > 신분증 전달받을 방법 필요 (qrcode plugin 있음) https://web-inf.tistory.com/15
     3. Blockchain에 있는 Issuer의 공개키를 통해 Host 신분증을 복호화
     4. Host 신원 확인
+    
+# 신분증 Form (미정)
+~~~
+신분증 Form:
+{
+UserType: Issuer | Host | Verifier,
+HostData: hostData,
+ // 이후 추가 가능
+ + Sign: IssuerSign?
+ + Sign: HostSign 
+}
+~~~
