@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#000000">
+  <title>Klaytn Addition Game</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+          integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+          crossorigin="anonymous"></script>
+  <script src="index.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+        integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+</head>
+
+<!--body start-->
+<body>
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+      <h1 class="text-center">모바일 신분증 </h1>
+      <button type="button"
+              class="btn btn-info pull-right"
+              id="test"
+              data-toggle="modal"
+              data-target="#testModal">
+        인증테스트
+      </button>
+      <h3 class="text-center">로그인화면</h3>
+      <button type="button"
+              class="btn btn-info pull-right"
+              id="login"
+              data-toggle="modal"
+              data-target="#loginModal">
+        로그인
+      </button>
+      <button type="button"
+              class="btn btn-info pull-right"
+              id="logout"
+              style="display: none;"
+              onclick="App.handleLogout()">
+        로그아웃
+      </button>
+      <div class="text-center" id="address"></div>
+    </div>
+  </div>
+</div>
+
+<!--회원가입 진행-->
+<div class="container" id="host_input" style="display: none;">
+  <form id=host_data_input>
+    <p>이름: <input type="text" id="host_name"></p>
+    <p>주민등록번호: <input type="text" id="host_id_front" size="10" maxlength="6">
+      -<input type="password" id="host_id_rear" size="10" maxlength="7"></p>
+    <p>전화번호: <input type="tel" id="host_phone" size="20"></p>
+    <button type="button" class="btn btn-info pull-left" id="host_input_yes" onclick="App.inputHostData()">확인</button>
+    <!--inputHostData()로 Host data transaction !!!!ERROR-->
+  </form>
+</div>
+
+<!--회원가입 된 경우 Host Data 출력부-->
+<div class="row text-center">
+  <div id="host_data"></div>
+  <button type="button" style="display: none;" class="btn btn-info pull-center" id="host_session_out" onclick="App.hostSessionOut()">임시 회원탈퇴 - 세션에서 없애기</button>
+</div>
+
+<div id="spin"></div>
+
+<div class="modal fade" tabindex="-1" role="dialog" id="loginModal">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="keystore">Keystore</label>
+          <input type="file" id="keystore" onchange="App.handleImport()">
+        </div>
+        <div class="form-group">
+          <label for="input-password">비밀번호</label>
+          <input type="password" class="form-control" id="input-password" onchange="App.handlePassword()">
+          <p class="help-block" id="message"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+        <button type="button" class="btn btn-primary" id="submit" onclick="App.handleLogin()">제출</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<div class="modal fade" tabindex="-1" role="dialog" id="testModal">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="hostData">hostData</label>
+          <input type="file" id="hostData" onchange="App.hostDataImport()">
+        </div>
+        <div class="form-group">
+          <label for="publicKey">publicKey</label>
+          <input type="file" id="publicKey" onchange="App.publicKeyImport()">
+          <p class="help-block" id="message_"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+        <button type="button" class="btn btn-primary" id="submit2" onclick="App.verifyTest()">제출</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+</div>
+</div>
+</body>
+
+
+</html>
+
+<style>
+  .yellow-box {
+    background-color: #FFC;
+    padding: 2rem;
+    margin: 0 auto;
+    max-width: 500px;
+    font-size: 80px;
+  }
+
+  #timer {
+    font-size: 80px;
+    color: red;
+  }
+
+  @keyframes spinner-line-fade-more {
+    0%, 100% {
+      opacity: 0;
+    }
+    1% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes spinner-line-fade-quick {
+    0%, 39%, 100% {
+      opacity: 0.25;
+    }
+    40% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes spinner-line-fade-default {
+    0%, 100% {
+      opacity: 0.22;
+    }
+    1% {
+      opacity: 1;
+    }
+  }
+</style>

@@ -1,0 +1,32 @@
+{
+  "name": "package.json",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "caver-js": "^1.5.2-rc.1",
+    "connect-privkey-to-provider": "0.0.3",
+    "node-rsa": "^1.1.1",
+    "spin.js": "^4.0.0",
+    "truffle": "^4.1.15"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^4.6.0",
+    "eslint": "^4.19.1",
+    "webpack": "^4.7.0",
+    "webpack-cli": "^3.1.1",
+    "webpack-dev-server": "^3.1.4"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "webpack-dev-server"
+  },
+  "eslintConfig": {
+    "env": {
+      "browser": true,
+      "node": true
+    }
+  },
+  "author": "hjk",
+  "license": "ISC"
+}
