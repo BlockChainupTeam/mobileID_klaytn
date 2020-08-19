@@ -20,7 +20,15 @@
 <div class="container">
   <div class="row">
     <div class="col-md-8 col-md-offset-2">
+      <h1 class="text-center" id="issuer_notice"
+          style="display: none;
+                 color: red;
+                 font-weight: bold; ">
+        !!!관리자 계정입니다!!!
+      </h1>
       <h1 class="text-center">모바일 신분증 </h1>
+
+      <h3 class="text-center">로그인화면</h3>
       <button type="button"
               class="btn btn-info pull-right"
               id="test"
@@ -28,7 +36,6 @@
               data-target="#testModal">
         인증테스트
       </button>
-      <h3 class="text-center">로그인화면</h3>
       <button type="button"
               class="btn btn-info pull-right"
               id="login"
@@ -43,20 +50,60 @@
               onclick="App.handleLogout()">
         로그아웃
       </button>
+      <button type="button"
+              class="btn btn-info pull-right"
+              id="Button_issuer_key"
+              style="display: none;"
+              onclick="App.setIssuerKey()">
+        Issuer 키 발급받기
+      </button>
       <div class="text-center" id="address"></div>
     </div>
   </div>
 </div>
 
+<!--- 임시 --->
+<div class="text-center" id="IssuerPublicKey"></div>
+
+
+
+
 <!--회원가입 진행-->
-<div class="container" id="host_input" style="display: none;">
-  <form id=host_data_input>
+<div class="container" id="data_input" style="display: none;">
+  <p>UserType:
+    <button type="button"
+            class="btn btn-info"
+            id="Button_UserType_Host"
+
+            onclick="$('#host_data_input').show();
+                     $('#verifier_data_input').hide();
+                     App.user.userType='host'">
+      Host
+    </button>
+    <button type="button"
+            class="btn btn-info"
+            id="Button_UserType_Verifier"
+
+            onclick="$('#verifier_data_input').show();
+                     $('#host_data_input').hide();
+                      App.user.userType='host'">
+      Verifier
+    </button>
+  </p>
+  <form id=host_data_input style="display: none">
+    <p>계정 주소: <input type="text" id="host_address"></p></p>
     <p>이름: <input type="text" id="host_name"></p>
     <p>주민등록번호: <input type="text" id="host_id_front" size="10" maxlength="6">
       -<input type="password" id="host_id_rear" size="10" maxlength="7"></p>
     <p>전화번호: <input type="tel" id="host_phone" size="20"></p>
-    <button type="button" class="btn btn-info pull-left" id="host_input_yes" onclick="App.inputHostData()">확인</button>
-    <!--inputHostData()로 Host data transaction !!!!ERROR-->
+    <button type="button" class="btn btn-info pull-left" id="host_input_yes" data-toggle="modal" data-target="#privateKeyModal">확인</button>
+  </form>
+  <form id="verifier_data_input" style="display: none">
+    <p>계정 주소: <input type="text" id="verifier_address"></p></p>
+    <p>기업 이름: <input type="text" id="vereifier_name"></p>
+    <p>등록번호: <input type="text" id="verifier_id" size="10" maxlength="6">
+    <p>전화번호: <input type="tel" id="verifier_phone" size="20"></p>
+    <button type="button" class="btn btn-info pull-left" id="verifier_input_yes" onclick="App.inputVerifierData()">확인</button>
   </form>
 </div>
 
@@ -68,6 +115,7 @@
 
 <div id="spin"></div>
 
+<!--- 로그인용 모달 ---->
 <div class="modal fade" tabindex="-1" role="dialog" id="loginModal">
   <div class="modal-dialog modal-sm">
     <div class="modal-content">
@@ -84,11 +132,34 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
-        <button type="button" class="btn btn-primary" id="submit" onclick="App.handleLogin()">제출</button>
+        <button type="button" class="btn btn-primary" id="Login_submit" onclick="App.handleLogin()">제출</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
+
+
+<!-- 키 입력용 모달 --->
+<div class="modal fade" tabindex="-1" role="dialog" id="privateKeyModal">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="keystore">Keystore</label>
+          <input type="file" id="input_privateKey_modal" onchange="App.privateKeyImport()">
+        </div>
+        <div class="form-group">
+          <p class="help-block" id="privateKey_message"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+        <button type="button" class="btn btn-primary" id="submit" onclick="App.exportUserData()">제출</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
 
 <div class="modal fade" tabindex="-1" role="dialog" id="testModal">
   <div class="modal-dialog modal-sm">
