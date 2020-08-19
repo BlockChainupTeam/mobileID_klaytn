@@ -1,6 +1,7 @@
 # 실행방법
 현재 리포 받은 후 
-> npm install <br> 
+> npm install <br>
+> truffle-config.js에서 PrivateKey 변경 <br>
 > npm run dev //실행
 
 # 주요 버전
