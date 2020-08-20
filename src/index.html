@@ -77,7 +77,7 @@
 
             onclick="$('#host_data_input').show();
                      $('#verifier_data_input').hide();
-                     App.user.userType='host'">
+                     App.user.userType='Host'">
       Host
     </button>
     <button type="button"
@@ -86,7 +86,7 @@
 
             onclick="$('#verifier_data_input').show();
                      $('#host_data_input').hide();
-                      App.user.userType='host'">
+                      App.user.userType='Verifier'">
       Verifier
     </button>
   </p>
@@ -96,14 +96,16 @@
     <p>주민등록번호: <input type="text" id="host_id_front" size="10" maxlength="6">
       -<input type="password" id="host_id_rear" size="10" maxlength="7"></p>
     <p>전화번호: <input type="tel" id="host_phone" size="20"></p>
-    <button type="button" class="btn btn-info pull-left" id="host_input_yes" data-toggle="modal" data-target="#privateKeyModal">확인</button>
+    <button type="button" class="btn btn-info pull-left" id="host_input_yes"
+            data-toggle="modal" data-target="#privateKeyModal">확인</button>
   </form>
   <form id="verifier_data_input" style="display: none">
-    <p>계정 주소: <input type="text" id="verifier_address"></p></p>
-    <p>기업 이름: <input type="text" id="vereifier_name"></p>
+    <p>계정주소: <input type="text" id="verifier_address"></p></p>
+    <p>기업이름: <input type="text" id="verifier_name"></p>
     <p>등록번호: <input type="text" id="verifier_id" size="10" maxlength="6">
     <p>전화번호: <input type="tel" id="verifier_phone" size="20"></p>
-    <button type="button" class="btn btn-info pull-left" id="verifier_input_yes" onclick="App.inputVerifierData()">확인</button>
+    <button type="button" class="btn btn-info pull-left" id="verifier_input_yes"
+            data-toggle="modal" data-target="#privateKeyModal">확인</button>
   </form>
 </div>
 

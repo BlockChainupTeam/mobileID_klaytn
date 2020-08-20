@@ -14,8 +14,6 @@
 import Caver from "caver-js";
 import {Spinner} from "spin.js";
 import RSA from "./rsa";
-import AESCrypt from "./aes";
-import crypto from "crypto";
 
 const config = {
   rpcURL: 'https://api.baobab.klaytn.net:8651'
@@ -74,6 +72,13 @@ const App = {
     }
   },
 
+
+  /**
+   * << UI >>
+   * User Type에 따라 분기
+   * @param walletInstance
+   * @returns {Promise<void>}
+   */
   changeUI: async function (walletInstance) {
     $('#loginModal').modal('hide');
     $('#login').hide();
@@ -93,81 +98,29 @@ const App = {
     $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
   },
 
-  getIssuerUI: async function () {
-    $('#issuer_notice').show();
-    $('#data_input').show();
-    let isIssuerPublicKey = await agContract.methods.isIssuerPublicKey().call();
-    /* 재발급 받는 방향도 고려해봐야할듯 */
-    if (isIssuerPublicKey) { // 이미 키가 저장되어 있다면
-      $('#Button_issuer_key').hide();
-      $('#IssuerPublicKey').append("Issuer 공개캐 : " + await agContract.methods.getIssuerPublicKey().call());
-    } else { // 키가 저장되어 있지 않다면
-      alert("키를 발급받으세요!");
-      $('#Button_issuer_key').show();
+
+
+  setUserData: function () {
+    if (this.user.userType === 'Host') {
+      this.user.address = document.getElementById("host_address").value;
+      this.user.name = document.getElementById("host_name").value;
+      this.user.id_number = document.getElementById("host_id_front").value + "-" + document.getElementById("host_id_rear").value;
+      this.user.phone = document.getElementById("host_phone").value;
+    } else if (this.user.userType === 'Verifier') {
+      this.user.address = document.getElementById("verifier_address").value;
+      this.user.name = document.getElementById("verifier_name").value;
+      this.user.id_number = document.getElementById("verifier_id").value;
+      this.user.phone = document.getElementById("verifier_phone").value;
     }
   },
 
   /**
-   * << Issuer - 키 생성 >>
-   * 이슈어 개인키 / 공개키 생성
-   * 개인키는 저장, 공개키는 블록에 저장함.
-   * @returns {Promise<void>}
+   * << UserData - file export >>
+   * user가 입력한 data를 파일로 출력
    */
-  setIssuerKey: async function () {
-    var spinner = this.showSpinner();
-
-    RSA.getKey();
-    await this.fileDownload(RSA.getPrivateKey(), 'IssuerPrivateKey', 'pem');
-    const issuerPublicKey = RSA.getPublicKey();
-    agContract.methods.setIssuerPublicKey(issuerPublicKey).send({
-      from: await this.callOwner(),
-      gas: '2500000',
-      value: 0
-    })
-        .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
-          console.log(`txHash: ${txHash}`);
-        })
-        .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
-          console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
-          spinner.stop(); // loading ui 종료
-          alert("컨트랙에 공용키 (" + issuerPublicKey + ")를 저장했습니다."); // 입력된 host 정보
-          location.reload();
-        })
-        .once('error', (error) => { // error가 발생한 경우
-          alert(error.message);
-        });
-  },
-
-
-  checkValidPrivateKey: function (text) {
-    return text.startsWith('-----BEGIN PRIVATE KEY-----') &&
-        text.endsWith('-----END PRIVATE KEY-----');
-  },
-
-
-  privateKeyImport: function () {
-    const privateKey = new FileReader();
-    privateKey.readAsText(event.target.files[0]); //file 선택
-    privateKey.onload = (event) => { // 선택 후 확인
-      try{
-        if (!this.checkValidPrivateKey(event.target.result)){ // 올바른 키스토어 파일인지 확인
-          $('#privateKey_message').text('유효하지 않은 privateKey 파일입니다.');
-          return;
-        } //검증통과
-        this.auth.keystore = event.target.result; // TODO 변수 설정 필요!!(전역 X)
-        $('#privateKey_message').text('private 통과. 확인을 누르면 User Data File이 출력됩니다.');
-      } catch (event) {
-        $('#privateKey_message').text('유효하지 않은 privateKey 파일입니다.');
-      }
-    }
-  },
-
   exportUserData: function () {
     const privateKey = this.auth.keystore;
-    this.user.address = document.getElementById("host_address").value;
-    this.user.name = document.getElementById("host_name").value;
-    this.user.id_number = document.getElementById("host_id_front").value + "-" + document.getElementById("host_id_rear").value;
-    this.user.phone = document.getElementById("host_phone").value;
+    this.setUserData();
 
     if (!cav.utils.isAddress(this.user.address)) {
       alert("올바른 주소가 아닙니다!!");
@@ -192,37 +145,13 @@ const App = {
   },
 
 
-  checkValidUserData: function (userDataFile) {
-    const parseUserData = JSON.parse(userDataFile);
-    return parseUserData.UserType &&
-        parseUserData.cipher;
-  },
 
-  userDataImport: function () {
-    const userData = new FileReader();
-    userData.readAsText(event.target.files[0]); //file 선택
-    userData.onload = (event) => { // 선택 후 확인
-      try{
-        if (!this.checkValidUserData(event.target.result)){ // 올바른 키스토어 파일인지 확인
-          $('#privateKey_message').text('유효하지 않은 userData 파일입니다.');
-          return;
-        } //검증통과
-        this.cipherHostData = JSON.parse(event.target.result).cipher;
-        $('#decrypt_message').text('userData 통과. ');
-      } catch (event) {
-        $('#decrypt_message').text('유효하지 않은 userData 파일입니다.');
-      }
-    }
-  },
 
-  decryptUserData: async function () {
-    const publicKey = await agContract.methods.getIssuerPublicKey().call();
-    console.log(publicKey);
-    console.log(RSA.decryptData(publicKey, this.cipherHostData));
-    alert(RSA.decryptData(publicKey, this.cipherHostData));
-    $('#decryptModal').modal('hide');
-    location.reload();
-  },
+
+
+
+
+
 
 
 
@@ -238,10 +167,10 @@ const App = {
    */
   inputHostData: async function () {
 
-    this.user.address = document.getElementById("host_address").value;
-    this.user.name = document.getElementById("host_name").value;
-    this.user.id_number = document.getElementById("host_id_front").value + "-" + document.getElementById("host_id_rear").value;
-    this.user.phone = document.getElementById("host_phone").value;
+    // this.user.address = document.getElementById("host_address").value;
+    // this.user.name = document.getElementById("host_name").value;
+    // this.user.id_number = document.getElementById("host_id_front").value + "-" + document.getElementById("host_id_rear").value;
+    // this.user.phone = document.getElementById("host_phone").value;
 
     if (!cav.utils.isAddress(this.user.address)) {
       alert("올바른 주소가 아닙니다!!");
@@ -329,18 +258,6 @@ const App = {
     alert("공개키로 복호화된 정보\n" + decipher);
   },
 
-
-
-
-
-
-
-
-// ####### Functions - Can't control #######
-// 확인 필요한 코드 - 확인 요청 한 후에 아래로 내릴 것
-
-
-
   /**
    * << UI >>
    * hostdata 있는 경우
@@ -379,19 +296,6 @@ const App = {
     $('#host_data').hide();
     $('#host_session_out').hide();
     $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
-  },
-
-  /**
-   *  << 컨트랙트 >>
-   *  컨트랙트에서 host정보 가져옴
-   * @param address : 현재 사용자 계정 주소
-   * @returns {Promise<*>}
-   */
-  getHostFromContracts: async function (address) {
-    return await agContract.methods.getHost(address).call();
-  },
-  getHostCountFromContracts: async function () {
-    return await agContract.methods.getHostCount().call();
   },
 
   /**
@@ -445,6 +349,167 @@ const App = {
           });
     }
   },
+
+
+
+
+
+
+// ####### Functions - Can't control #######
+// 확인 필요한 코드 - 확인 요청 한 후에 아래로 내릴 것
+
+  /**
+   * << UI - Issuer >>
+   * Issuer 로그인 경우
+   * - Issuer == owner인 경우
+   * @returns {Promise<void>}
+   */
+  getIssuerUI: async function () {
+    $('#issuer_notice').show();
+    $('#data_input').show();
+    let isIssuerPublicKey = await agContract.methods.isIssuerPublicKey().call();
+    /* 재발급 받는 방향도 고려해봐야할듯 */
+    if (isIssuerPublicKey) { // 이미 키가 저장되어 있다면
+      $('#Button_issuer_key').hide();
+      $('#IssuerPublicKey').append("Issuer 공개캐 : " + await agContract.methods.getIssuerPublicKey().call());
+    } else { // 키가 저장되어 있지 않다면
+      alert("키를 발급받으세요!");
+      $('#Button_issuer_key').show();
+    }
+  },
+
+  /**
+   * << Issuer - 키 생성 >>
+   * 이슈어 개인키 / 공개키 생성
+   * 개인키는 저장, 공개키는 블록에 저장함.
+   * @returns {Promise<void>}
+   */
+  setIssuerKey: async function () {
+    var spinner = this.showSpinner();
+
+    RSA.getKey();
+    await this.fileDownload(RSA.getPrivateKey(), 'IssuerPrivateKey', 'pem');
+    const issuerPublicKey = RSA.getPublicKey();
+    agContract.methods.setIssuerPublicKey(issuerPublicKey).send({
+      from: await this.callOwner(),
+      gas: '2500000',
+      value: 0
+    })
+        .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
+          console.log(`txHash: ${txHash}`);
+        })
+        .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
+          console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
+          spinner.stop(); // loading ui 종료
+          alert("컨트랙에 공용키 (" + issuerPublicKey + ")를 저장했습니다."); // 입력된 host 정보
+          location.reload();
+        })
+        .once('error', (error) => { // error가 발생한 경우
+          alert(error.message);
+        });
+  },
+
+
+  /**
+   * << 개인키 >>
+   * 키 형식 확인
+   * pksc8 형식에 맞는 개인키가 맞는지 확인
+   * @param text
+   * @returns {boolean|boolean}
+   */
+  checkValidPrivateKey: function (text) {
+    return text.startsWith('-----BEGIN PRIVATE KEY-----') &&
+        text.endsWith('-----END PRIVATE KEY-----');
+  },
+
+
+  /**
+   * << 개인키 >>
+   * 개인키 선택 시 유효한 개인키인지 확인 밎 keystore에 개인키 임시 저장 ( TODO: 변수 사용하지 말고 구현 방법 찾기 )
+   */
+  privateKeyImport: function () {
+    const privateKey = new FileReader();
+    privateKey.readAsText(event.target.files[0]); //file 선택
+    privateKey.onload = (event) => { // 선택 후 확인
+      try{
+        if (!this.checkValidPrivateKey(event.target.result)){ // 올바른 키스토어 파일인지 확인
+          $('#privateKey_message').text('유효하지 않은 privateKey 파일입니다.');
+          return;
+        } //검증통과
+        this.auth.keystore = event.target.result; // TODO 변수 설정 필요!!(전역 X)
+        $('#privateKey_message').text('private 통과. 확인을 누르면 User Data File이 출력됩니다.');
+      } catch (event) {
+        $('#privateKey_message').text('유효하지 않은 privateKey 파일입니다.');
+      }
+    }
+  },
+
+
+  /**
+   * << UserData >>
+   * user data 형식 확인
+   * userData 형식에 따라 바뀔필요있음
+   * @param userDataFile
+   * @returns {string}
+   */
+  checkValidUserData: function (userDataFile) {
+    const parseUserData = JSON.parse(userDataFile);
+    return parseUserData.UserType &&
+        parseUserData.cipher;
+  },
+
+  /**
+   * << user data >>
+   * userData 확인 후 cipherHostData에 cipher 저장
+   */
+  userDataImport: function () {
+    const userData = new FileReader();
+    userData.readAsText(event.target.files[0]); //file 선택
+    userData.onload = (event) => { // 선택 후 확인
+      try{
+        if (!this.checkValidUserData(event.target.result)){ // 올바른 키스토어 파일인지 확인
+          $('#privateKey_message').text('유효하지 않은 userData 파일입니다.');
+          return;
+        } //검증통과
+        this.cipherHostData = JSON.parse(event.target.result).cipher;
+        $('#decrypt_message').text('userData 통과. ');
+      } catch (event) {
+        $('#decrypt_message').text('유효하지 않은 userData 파일입니다.');
+      }
+    }
+  },
+
+  /**
+   * << 복호화 >>
+   * userData를 publicKey로 복호화
+   * @returns {Promise<void>}
+   */
+  decryptUserData: async function () {
+    const publicKey = await agContract.methods.getIssuerPublicKey().call();
+    console.log(publicKey);
+    console.log(RSA.decryptData(publicKey, this.cipherHostData));
+    alert(RSA.decryptData(publicKey, this.cipherHostData));
+    $('#decryptModal').modal('hide');
+    location.reload();
+  },
+
+
+
+
+  /**
+   *  << 컨트랙트 >>
+   *  컨트랙트에서 host정보 가져옴
+   * @param address : 현재 사용자 계정 주소
+   * @returns {Promise<*>}
+   */
+  getHostFromContracts: async function (address) {
+    return await agContract.methods.getHost(address).call();
+  },
+  getHostCountFromContracts: async function () {
+    return await agContract.methods.getHostCount().call();
+  },
+
+
 
 
 // ###### Functions - Can control ######
