@@ -19,6 +19,7 @@
 - ~ 8/9: 로그인 세션, 호스트 데이터 컨트랙트 구현
 - 8/14: crypto session 구현 시작 
 - 8/18: Repository 옮김
+- 8/20: Issuer - host 시나리오 완성, 개인키/공개키 일부 완성, rsa.js 일부수정
 
 
 # TODO

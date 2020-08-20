@@ -110,7 +110,8 @@
 <!--회원가입 된 경우 Host Data 출력부-->
 <div class="row text-center">
   <div id="host_data"></div>
-  <button type="button" style="display: none;" class="btn btn-info pull-center" id="host_session_out" onclick="App.hostSessionOut()">임시 회원탈퇴 - 세션에서 없애기</button>
+  <button type="button" style="display: none;" class="btn btn-info pull-center" id="host_session_out" data-toggle="modal"
+          data-target="#decryptModal">- 임시 - 데이터 복호화 확인</button>
 </div>
 
 <div id="spin"></div>
@@ -145,7 +146,7 @@
     <div class="modal-content">
       <div class="modal-body">
         <div class="form-group">
-          <label for="keystore">Keystore</label>
+          <label for="keystore">privateKey</label>
           <input type="file" id="input_privateKey_modal" onchange="App.privateKeyImport()">
         </div>
         <div class="form-group">
@@ -155,6 +156,27 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
         <button type="button" class="btn btn-primary" id="submit" onclick="App.exportUserData()">제출</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<!-- 키 입력용 모달 --->
+<div class="modal fade" tabindex="-1" role="dialog" id="decryptModal">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="keystore">User Data file</label>
+          <input type="file" id="input_userData_modal" onchange="App.userDataImport()">
+        </div>
+        <div class="form-group">
+          <p class="help-block" id="decrypt_message"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+        <button type="button" class="btn btn-primary" id="decrypt_submit" onclick="App.decryptUserData()">제출</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->

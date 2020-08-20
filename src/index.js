@@ -180,12 +180,56 @@ const App = {
       phone: this.user.phone
     }
     const cipher = RSA.encryptData(privateKey, userData);
-    const IDCard = "{\nUserType: " + this.user.userType + ", \ncipher: " + cipher + "\n}";
-    console.log(IDCard.toString());
-    this.fileDownload(IDCard.toString(), "IDCard" + this.user.address, 'txt');
+    const IDCard = {
+      UserType: this.user.userType,
+      cipher: cipher
+    }; // TODO Address 추가할지 확인
+
+    this.fileDownload(JSON.stringify(IDCard), "IDCard-" + this.user.address, 'txt');
+
+    $('#privateKeyModal').modal('hide');
+    location.reload();
   },
 
 
+  checkValidUserData: function (userDataFile) {
+    const parseUserData = JSON.parse(userDataFile);
+    return parseUserData.UserType &&
+        parseUserData.cipher;
+  },
+
+  userDataImport: function () {
+    const userData = new FileReader();
+    userData.readAsText(event.target.files[0]); //file 선택
+    userData.onload = (event) => { // 선택 후 확인
+      try{
+        if (!this.checkValidUserData(event.target.result)){ // 올바른 키스토어 파일인지 확인
+          $('#privateKey_message').text('유효하지 않은 userData 파일입니다.');
+          return;
+        } //검증통과
+        this.cipherHostData = JSON.parse(event.target.result).cipher;
+        $('#decrypt_message').text('userData 통과. ');
+      } catch (event) {
+        $('#decrypt_message').text('유효하지 않은 userData 파일입니다.');
+      }
+    }
+  },
+
+  decryptUserData: async function () {
+    const publicKey = await agContract.methods.getIssuerPublicKey().call();
+    console.log(publicKey);
+    console.log(RSA.decryptData(publicKey, this.cipherHostData));
+    alert(RSA.decryptData(publicKey, this.cipherHostData));
+    $('#decryptModal').modal('hide');
+    location.reload();
+  },
+
+
+
+
+
+
+  // 임시 - 기능구현
   /**
    * << 컨트랙트 >>
    * Host data를 폼에 맞게 입력하면, 해당 데이터를 contract로 블록에 저장
@@ -255,28 +299,7 @@ const App = {
   },
 
 
-  /**
-   * << 로그인 >>
-   * 유효한 키스토어 파일인지 확인
-   */
-  handleImport: async function () {
-    const fileReader = new FileReader();
-    fileReader.readAsText(event.target.files[0]); //file 선택
-    fileReader.onload = (event) => { // 선택 후 확인
-      try{
-        if (!this.checkValidKeystore(event.target.result)){ // 올바른 키스토어 파일인지 확인
-          $('#message').text('유효하지 않은 keystore 파일입니다.');
-          return;
-        } //검증통과
-        this.auth.keystore = event.target.result;
-        $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
-        document.querySelector('#input-password').focus();
-      } catch (event) {
-        $('#message').text('유효하지 않은 keystore 파일입니다.');
-        return;
-      }
-    }
-  },
+
   /**
    * << 임시 >>
    * publidkey 가져오기
@@ -427,7 +450,28 @@ const App = {
 // ###### Functions - Can control ######
 //          정확히 작동되는 것만
 
-
+  /**
+   * << 로그인 >>
+   * 유효한 키스토어 파일인지 확인
+   */
+  handleImport: async function () {
+    const fileReader = new FileReader();
+    fileReader.readAsText(event.target.files[0]); //file 선택
+    fileReader.onload = (event) => { // 선택 후 확인
+      try{
+        if (!this.checkValidKeystore(event.target.result)){ // 올바른 키스토어 파일인지 확인
+          $('#message').text('유효하지 않은 keystore 파일입니다.');
+          return;
+        } //검증통과
+        this.auth.keystore = event.target.result;
+        $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
+        document.querySelector('#input-password').focus();
+      } catch (event) {
+        $('#message').text('유효하지 않은 keystore 파일입니다.');
+        return;
+      }
+    }
+  },
 
   /**
    * << 로그인 >>

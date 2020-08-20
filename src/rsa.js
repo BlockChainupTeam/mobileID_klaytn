@@ -1,6 +1,6 @@
 const NodeRSA = require('node-rsa');
 
-let key = new NodeRSA({b: 2048});
+let key = new NodeRSA({b: 512});
 
 const RSA = {};
 
@@ -26,7 +26,13 @@ RSA.getPrivateKey = function () {
 
 
 RSA.encryptData = function (privateKey, userData) {
+    key = new NodeRSA(privateKey,'pkcs8-private-pem');
     return key.encryptPrivate(userData, 'base64');
+}
+
+RSA.decryptData = function (publicKey, userData) {
+    key = new NodeRSA(publicKey, 'pkcs8-public-pem');
+    return key.decryptPublic(userData, 'utf8');
 }
 
 module.exports = RSA;
