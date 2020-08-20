@@ -151,7 +151,7 @@ const App = {
     console.log(account);
     const userKeystore = cav.klay.accounts.encrypt(account.privateKey, this.user.password); // !!ERROR!!
 
-    this.fileDownload(userKeystore, this.user.name + "KeyStore" , 'JSON');
+    this.fileDownload(JSON.stringify(userKeystore), this.user.name + "KeyStore" , 'JSON');
 
     $('#privateKeyModal').modal('hide');
     location.reload();
