@@ -149,12 +149,14 @@ const App = {
 
     const account = cav.klay.accounts.create();
     console.log(account);
-    const userKeystore = cav.klay.accounts.encrypt(account.privateKey, this.user.password); // !!ERROR!!
+    const userKeystore = cav.klay.accounts.encrypt(account.privateKey, this.user.password.toString()); // !!ERROR!!
+    console.log(userKeystore);
+    console.log(this.user.password.toString());
 
-    this.fileDownload(JSON.stringify(userKeystore), this.user.name + "KeyStore" , 'JSON');
+    this.fileDownload(JSON.stringify(userKeystore), this.user.name + "KeyStore" ,  "application/json");
 
     $('#privateKeyModal').modal('hide');
-    location.reload();
+    // location.reload();
   },
 
 
@@ -614,12 +616,17 @@ const App = {
    */
   checkValidKeystore: function (keystore) {
     const parseKeystore = JSON.parse(keystore);
-    const isValidKeystore = parseKeystore.version &&
+    const isValidKeystoreV3 = parseKeystore.version &&
         parseKeystore.id &&
         parseKeystore.address &&
         parseKeystore.crypto;
 
-    return isValidKeystore;
+    const isValidKeystoreV4 = parseKeystore.version &&
+        parseKeystore.id &&
+        parseKeystore.address &&
+        parseKeystore.keyring;
+
+    return isValidKeystoreV3 || isValidKeystoreV4;
   },
 
 
