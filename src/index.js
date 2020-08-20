@@ -31,7 +31,7 @@ const App = {
   },
 
   user:{
-    address: '',
+    password: '',
     userType: '',
     name: '',
     id_number: '',
@@ -86,28 +86,35 @@ const App = {
 
     // issuer가 접속한 경우에만 호스트 데이터 입력할 수 있도록
     if (await this.callOwner() === cav.utils.toChecksumAddress(walletInstance.address)) { // Issuer 로그인 경우
-      await this.getIssuerUI(walletInstance);
-    } else if (_idCard.UserType === 'Host') { // host 로그인 경우
-      // host session Login
-    } else if (_idCard.UserType === 'Verifier') { // Verifier 로그인 경우
-      // veerifier session Login
-    } else { // 올바르지 않은 UserType인 경우
-      alert("올바르지 않은 유저 타입입니다!");
+      await this.issuerUI(walletInstance);
+    } else {
+      this.userUI(walletInstance);
     }
+    // if (_idCard.UserType === 'Host') { // host 로그인 경우
+    //   // host session Login
+    // } else if (_idCard.UserType === 'Verifier') { // Verifier 로그인 경우
+    //   // veerifier session Login
+    // } else { // 올바르지 않은 UserType인 경우
+    //   alert("올바르지 않은 유저 타입입니다!");
+    // }
     $('#host_session_out').show(); //TODO: 임시로 만들어놓음
     $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
+  },
+
+  userUI: function () {
+    $('#')
   },
 
 
 
   setUserData: function () {
     if (this.user.userType === 'Host') {
-      this.user.address = document.getElementById("host_address").value;
+      this.user.password = document.getElementById("host_password").value;
       this.user.name = document.getElementById("host_name").value;
       this.user.id_number = document.getElementById("host_id_front").value + "-" + document.getElementById("host_id_rear").value;
       this.user.phone = document.getElementById("host_phone").value;
     } else if (this.user.userType === 'Verifier') {
-      this.user.address = document.getElementById("verifier_address").value;
+      this.user.password = document.getElementById("verifier_password").value;
       this.user.name = document.getElementById("verifier_name").value;
       this.user.id_number = document.getElementById("verifier_id").value;
       this.user.phone = document.getElementById("verifier_phone").value;
@@ -122,10 +129,10 @@ const App = {
     const privateKey = this.auth.keystore;
     this.setUserData();
 
-    if (!cav.utils.isAddress(this.user.address)) {
-      alert("올바른 주소가 아닙니다!!");
-      return;
-    }
+    // if (!cav.utils.isAddress(this.user.address)) {
+    //   alert("올바른 주소가 아닙니다!!");
+    //   return;
+    // }
 
     const userData = {
       name: this.user.name,
@@ -138,7 +145,13 @@ const App = {
       cipher: cipher
     }; // TODO Address 추가할지 확인
 
-    this.fileDownload(JSON.stringify(IDCard), "IDCard-" + this.user.address, 'txt');
+    this.fileDownload(JSON.stringify(IDCard), "IDCard-" + this.user.name, 'txt');
+
+    const account = cav.klay.accounts.create();
+    console.log(account);
+    const userKeystore = cav.klay.accounts.encrypt(account.privateKey, this.user.password); // !!ERROR!!
+
+    this.fileDownload(userKeystore, this.user.name + "KeyStore" , 'JSON');
 
     $('#privateKeyModal').modal('hide');
     location.reload();
@@ -364,14 +377,14 @@ const App = {
    * - Issuer == owner인 경우
    * @returns {Promise<void>}
    */
-  getIssuerUI: async function () {
+  issuerUI: async function () {
     $('#issuer_notice').show();
     $('#data_input').show();
     let isIssuerPublicKey = await agContract.methods.isIssuerPublicKey().call();
     /* 재발급 받는 방향도 고려해봐야할듯 */
     if (isIssuerPublicKey) { // 이미 키가 저장되어 있다면
       $('#Button_issuer_key').hide();
-      $('#IssuerPublicKey').append("Issuer 공개캐 : " + await agContract.methods.getIssuerPublicKey().call());
+      $('#IssuerPublicKey').append("Issuer 공개키 : " + await agContract.methods.getIssuerPublicKey().call());
     } else { // 키가 저장되어 있지 않다면
       alert("키를 발급받으세요!");
       $('#Button_issuer_key').show();

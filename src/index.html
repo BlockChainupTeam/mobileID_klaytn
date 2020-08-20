@@ -65,7 +65,15 @@
 <!--- 임시 --->
 <div class="text-center" id="IssuerPublicKey"></div>
 
-
+<div class="container" id="userUI">
+  <button type="button"
+          class="btn btn-info pull-left"
+          id="Button_import_userData"
+          style="display: none;"
+          data-toggle="modal" data-target="#userDataImportModal">
+    UserData 입력하기
+  </button>
+</div>
 
 
 <!--회원가입 진행-->
@@ -91,7 +99,7 @@
     </button>
   </p>
   <form id=host_data_input style="display: none">
-    <p>계정 주소: <input type="text" id="host_address"></p></p>
+    <p>사용할 비밀번호: <input type="text" id="host_password"></p></p>
     <p>이름: <input type="text" id="host_name"></p>
     <p>주민등록번호: <input type="text" id="host_id_front" size="10" maxlength="6">
       -<input type="password" id="host_id_rear" size="10" maxlength="7"></p>
@@ -100,7 +108,7 @@
             data-toggle="modal" data-target="#privateKeyModal">확인</button>
   </form>
   <form id="verifier_data_input" style="display: none">
-    <p>계정주소: <input type="text" id="verifier_address"></p></p>
+    <p>계정주소: <input type="text" id="verifier_password"></p></p>
     <p>기업이름: <input type="text" id="verifier_name"></p>
     <p>등록번호: <input type="text" id="verifier_id" size="10" maxlength="6">
     <p>전화번호: <input type="tel" id="verifier_phone" size="20"></p>
@@ -163,7 +171,7 @@
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
 
-<!-- 키 입력용 모달 --->
+<!-- userdata 입력용 모달 --->
 <div class="modal fade" tabindex="-1" role="dialog" id="decryptModal">
   <div class="modal-dialog modal-sm">
     <div class="modal-content">
