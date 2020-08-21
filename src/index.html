@@ -38,10 +38,18 @@
       </button>
       <button type="button"
               class="btn btn-info pull-right"
-              id="login"
+              id="issuerLogin"
+              data-toggle="modal"
+              data-target="#loginModal"
+              onclick="App.user.userType = 'Issuer'">
+        Issuer 로그인
+      </button>
+      <button type="button"
+              class="btn btn-info pull-right"
+              id="userLogin"
               data-toggle="modal"
               data-target="#loginModal">
-        로그인
+        User 로그인
       </button>
       <button type="button"
               class="btn btn-info pull-right"
@@ -108,7 +116,7 @@
             data-toggle="modal" data-target="#privateKeyModal">확인</button>
   </form>
   <form id="verifier_data_input" style="display: none">
-    <p>계정주소: <input type="text" id="verifier_password"></p></p>
+    <p>사용할 비밀번호: <input type="text" id="verifier_password"></p></p>
     <p>기업이름: <input type="text" id="verifier_name"></p>
     <p>등록번호: <input type="text" id="verifier_id" size="10" maxlength="6">
     <p>전화번호: <input type="tel" id="verifier_phone" size="20"></p>

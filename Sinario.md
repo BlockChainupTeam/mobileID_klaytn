@@ -21,13 +21,14 @@
    
 2. 이후 로그인한 계정에 따라 Issuer와 Host, Verifier로 나뉨.
      
-# Senario #1 - Issuer
-- (미구현) 각 신분증에 암호화되지 않은 User type 기입 필요
-1. User의 정보를 오프라인으로 받는다. 
-2. User의 정보를 입력한다.
-3. Issuer Private Key를 입력하여 User의 정보를 암호화한다.
-4. Issuer Public Key를 Blockchain에 저장한다.
-5. 암호화된 User의 정보(신분증)을 User에게 전달한다.
+# Senario #1 - Issuer (DONE)
+- 각 신분증에 암호화되지 않은 User type 기입되어 있음 O
+1. User의 정보를 오프라인으로 받는다. O
+2. User의 정보를 입력한다. O
+3. Issuer Private Key를 입력하여 User의 정보를 암호화한다. O
+4. Issuer Public Key를 Blockchain에 저장한다. O
+5. 암호화된 User의 정보(신분증)을 User에게 전달한다. O
+    > 유저의 IDCard = (UserType + Data + Keystore) 로 한번에 신분증으로 발급, 유저는 IDCard로 로그인, 신분확인 모두 가능하다.
 
 # Senario #2 - Host
 - Issuer로부터 신분증을 받지 않은 경우 로그인 할 수 없음

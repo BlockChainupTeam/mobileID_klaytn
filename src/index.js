@@ -81,7 +81,7 @@ const App = {
    */
   changeUI: async function (walletInstance) {
     $('#loginModal').modal('hide');
-    $('#login').hide();
+    $('#userlogin').hide();
     $('#logout').show();
 
     // issuer가 접속한 경우에만 호스트 데이터 입력할 수 있도록
@@ -140,20 +140,17 @@ const App = {
       phone: this.user.phone
     }
     const cipher = RSA.encryptData(privateKey, userData);
-    const IDCard = {
-      UserType: this.user.userType,
-      cipher: cipher
-    }; // TODO Address 추가할지 확인
-
-    this.fileDownload(JSON.stringify(IDCard), "IDCard-" + this.user.name, 'txt');
 
     const account = cav.klay.accounts.create();
-    console.log(account);
     const userKeystore = cav.klay.accounts.encrypt(account.privateKey, this.user.password.toString()); // !!ERROR!!
-    console.log(userKeystore);
-    console.log(this.user.password.toString());
 
-    this.fileDownload(JSON.stringify(userKeystore), this.user.name + "KeyStore" ,  "application/json");
+    const IDCard = {
+      UserType: this.user.userType,
+      cipher: cipher,
+      keystore: userKeystore
+    }; // TODO Address 추가할지 확인
+
+    this.fileDownload(JSON.stringify(IDCard), "IDCard-" + this.user.name,  "application/json");
 
     $('#privateKeyModal').modal('hide');
     // location.reload();
@@ -386,7 +383,7 @@ const App = {
     /* 재발급 받는 방향도 고려해봐야할듯 */
     if (isIssuerPublicKey) { // 이미 키가 저장되어 있다면
       $('#Button_issuer_key').hide();
-      $('#IssuerPublicKey').append("Issuer 공개키 : " + await agContract.methods.getIssuerPublicKey().call());
+      $('#IssuerPublicKey').append("Issuer 공개키 : " + await agContract.methods.getIssuerPublicKey().call()); //TODO: 필요없으면 제거해도 됨
     } else { // 키가 저장되어 있지 않다면
       alert("키를 발급받으세요!");
       $('#Button_issuer_key').show();
@@ -501,8 +498,6 @@ const App = {
    */
   decryptUserData: async function () {
     const publicKey = await agContract.methods.getIssuerPublicKey().call();
-    console.log(publicKey);
-    console.log(RSA.decryptData(publicKey, this.cipherHostData));
     alert(RSA.decryptData(publicKey, this.cipherHostData));
     $('#decryptModal').modal('hide');
     location.reload();
@@ -527,6 +522,10 @@ const App = {
 
 
 
+
+
+
+
 // ###### Functions - Can control ######
 //          정확히 작동되는 것만
 
@@ -537,13 +536,23 @@ const App = {
   handleImport: async function () {
     const fileReader = new FileReader();
     fileReader.readAsText(event.target.files[0]); //file 선택
+    let keystore;
+
     fileReader.onload = (event) => { // 선택 후 확인
       try{
         if (!this.checkValidKeystore(event.target.result)){ // 올바른 키스토어 파일인지 확인
           $('#message').text('유효하지 않은 keystore 파일입니다.');
           return;
         } //검증통과
-        this.auth.keystore = event.target.result;
+
+        this.user.userType = JSON.parse(event.target.result).UserType;
+        if(this.user.userType === 'Host' || this.user.userType ===  'Verifier'){
+          keystore = JSON.parse(event.target.result).keystore;
+        } else {
+          keystore = event.target.result;
+        }
+
+        this.auth.keystore = keystore;
         $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
         document.querySelector('#input-password').focus();
       } catch (event) {
@@ -615,7 +624,13 @@ const App = {
    * 키스토어 = {버전, id, 주소, crypto}이므로 모두 있는지 확인 후 return
    */
   checkValidKeystore: function (keystore) {
-    const parseKeystore = JSON.parse(keystore);
+    let parseKeystore;
+    if (this.user.userType === 'Issuer') {
+      parseKeystore = JSON.parse(keystore);
+    } else {
+      parseKeystore = JSON.parse(keystore).keystore;
+    }
+
     const isValidKeystoreV3 = parseKeystore.version &&
         parseKeystore.id &&
         parseKeystore.address &&
