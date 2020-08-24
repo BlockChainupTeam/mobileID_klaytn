@@ -29,13 +29,7 @@
       <h1 class="text-center">모바일 신분증 </h1>
 
       <h3 class="text-center">로그인화면</h3>
-      <button type="button"
-              class="btn btn-info pull-right"
-              id="test"
-              data-toggle="modal"
-              data-target="#testModal">
-        인증테스트
-      </button>
+      
       <button type="button"
               class="btn btn-info pull-right"
               id="issuerLogin"
@@ -66,13 +60,13 @@
         Issuer 키 발급받기
       </button>
       <div class="text-center" id="address"></div>
+      <div class="text-center" id="HostPublicKey"></div>
     </div>
   </div>
 </div>
 
 <!--- 임시 --->
 <div class="text-center" id="IssuerPublicKey"></div>
-
 <div class="container" id="userUI">
   <button type="button"
           class="btn btn-info pull-left"
@@ -128,8 +122,11 @@
 <!--회원가입 된 경우 Host Data 출력부-->
 <div class="row text-center">
   <div id="host_data"></div>
+  <br></br>
   <button type="button" style="display: none;" class="btn btn-info pull-center" id="host_session_out" data-toggle="modal"
           data-target="#decryptModal">- 임시 - 데이터 복호화 확인</button>
+          <p style="display: none;" id="tooltip"> (verifier에게 Hostdata가 전달되었을 시) </p>
+          
 </div>
 
 
@@ -201,28 +198,6 @@
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
 
-
-<div class="modal fade" tabindex="-1" role="dialog" id="testModal">
-  <div class="modal-dialog modal-sm">
-    <div class="modal-content">
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="hostData">hostData</label>
-          <input type="file" id="hostData" onchange="App.hostDataImport()">
-        </div>
-        <div class="form-group">
-          <label for="publicKey">publicKey</label>
-          <input type="file" id="publicKey" onchange="App.publicKeyImport()">
-          <p class="help-block" id="message_"></p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
-        <button type="button" class="btn btn-primary" id="submit2" onclick="App.verifyTest()">제출</button>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
 
 </div>
 </div>

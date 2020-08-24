@@ -15,7 +15,7 @@ contract MobileID {
     constructor() public {
         owner = msg.sender;
     }
-
+    
     function setIssuerPublicKey(string _issuerPublicKey) public {
         pks[owner].publicKey = _issuerPublicKey;
         isIssuerKey = true;

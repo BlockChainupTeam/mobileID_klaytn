@@ -20,9 +20,15 @@
 - 8/14: crypto session 구현 시작 
 - 8/18: Repository 옮김
 - 8/20: Issuer - host 시나리오 완성, 개인키/공개키 일부 완성, rsa.js 일부수정
+- 8/24: Issuer가 host가 해야될 일 대신 해도 될거 같아서 전부 대신 해주고, 전달한다음 데이터 파기하는 시나리오 제시.
+        (Isser가 Host 키쌍 만들어주고 블록체인에 공개키도 올려주고, 서명도 해주고 PrivateKey 전달후 모두 파기하는 식)
+        필요없는 코드 지우고 파일 저장 조금 수정했음.(파일형식, jSON 저장시 들여쓰기), RSA에서 getkey시 새로생성하게 수정
 
 
 # TODO
 - 신분증 Form 필요
-- RSA 암호화 정리 필요
 - FrontEnd 구현
+- 시나리오에 대한 상의 필요.
+- Verifier - host 간 소통방식에 대한 상의 및 구현 필요.
+
+

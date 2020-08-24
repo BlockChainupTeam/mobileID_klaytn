@@ -1,6 +1,6 @@
 const NodeRSA = require('node-rsa');
 
-let key = new NodeRSA({b: 512});
+let key = new NodeRSA();
 
 const RSA = {};
 
@@ -13,6 +13,7 @@ RSA.decrypt = function (cipherText) {
 };
 
 RSA.getKey = function () {
+    key = new NodeRSA({b: 512});
     return key;
 };
 
