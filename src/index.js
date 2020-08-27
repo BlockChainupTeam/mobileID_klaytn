@@ -84,12 +84,16 @@ const App = {
     $('#userlogin').hide();
     $('#logout').show();
 
+    $('#host_session_out').show(); //TODO: 임시로 만들어놓음
+    $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
+
     // issuer가 접속한 경우에만 호스트 데이터 입력할 수 있도록
     if (await this.callOwner() === cav.utils.toChecksumAddress(walletInstance.address)) { // Issuer 로그인 경우
-      await this.issuerUI(walletInstance);
+      await this.issuerUI();
     } else {
       this.userUI(walletInstance);
     }
+<<<<<<< Updated upstream
     // if (_idCard.UserType === 'Host') { // host 로그인 경우
     //   // host session Login
     // } else if (_idCard.UserType === 'Verifier') { // Verifier 로그인 경우
@@ -105,7 +109,44 @@ const App = {
     $('#host_session_out').show(); //TODO: 임시로 만들어놓음
     $('#tooltip').show(); //TODO: 임시로 만들어놓음
     $('#HostPublicKey').append("Host 공개키 : " + await agContract.methods.getPublicKey(this.auth.address).call());
+=======
   },
+
+
+  /**
+   * << UI - USER Login >>
+   * 1. 최초 로그인시 블록에 유저 등록
+   */
+  userUI: function (walletInstance) {
+    var spinner = this.showSpinner();
+
+    const isJoined = agContract.methods.isPublicKey().call();
+    if (!isJoined) {
+      RSA.getKey();
+      RSA.getPrivateKey();
+
+
+      agContract.methods.setPublicKey(walletInstance.address, RSA.getPublicKey()).send({
+        from: walletInstance.address,
+        gas: '2500000',   //send 함수 수정했음
+        value: 0
+      })
+          .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
+            console.log(`txHash: ${txHash}`);
+          })
+          .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
+            console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
+            spinner.stop(); // loading ui 종료
+            alert("컨트랙에 공용키를 저장했습니다."); // 입력된 host 정보
+            location.reload();
+          })
+          .once('error', (error) => { // error가 발생한 경우
+            alert(error.message);
+          });
+    }
+>>>>>>> Stashed changes
+  },
+
 
 
 
@@ -132,11 +173,6 @@ const App = {
     var spinner = this.showSpinner();
     const privateKey = this.auth.keystore;
     this.setUserData();
-
-    // if (!cav.utils.isAddress(this.user.address)) {
-    //   alert("올바른 주소가 아닙니다!!");
-    //   return;
-    // }
 
     const userData = {
       name: this.user.name,
@@ -177,13 +213,229 @@ const App = {
       keystore: userKeystore
     }; // TODO Address 추가할지 확인
 
+<<<<<<< Updated upstream
     this.fileDownload(JSON.stringify(IDCard,null,8), "IDCard-" + this.user.name,  "application/json");
+=======
+    this.fileDownload(JSON.stringify(IDCard, null, 8), "IDCard-" + this.user.name,  "application/json");
+>>>>>>> Stashed changes
 
     $('#privateKeyModal').modal('hide');
-    // location.reload();
   },
 
 
+<<<<<<< Updated upstream
+=======
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // 임시 - 기능구현
+  /**
+   * << 컨트랙트 >>
+   * Host data를 폼에 맞게 입력하면, 해당 데이터를 contract로 블록에 저장
+   * 암호화 필요
+   * @returns {Promise<void>}
+   */
+  inputHostData: async function () {
+
+    // this.user.address = document.getElementById("host_address").value;
+    // this.user.name = document.getElementById("host_name").value;
+    // this.user.id_number = document.getElementById("host_id_front").value + "-" + document.getElementById("host_id_rear").value;
+    // this.user.phone = document.getElementById("host_phone").value;
+
+    if (!cav.utils.isAddress(this.user.address)) {
+      alert("올바른 주소가 아닙니다!!");
+      return;
+    }
+
+    const walletInstance = this.getWallet(); // 로그인된 계정 정보 확인
+    const hostData = {host: this.host};
+
+    await this.rsaGenerate(hostData);
+    await this.fileDownload(this.cipherHostData, 'hostData', 'txt');
+    await this.fileDownload(this.privateKey.host, 'privateKey', 'dll');
+    await this.fileDownload(this.publicKey.host, 'publicKey', 'application/pem');
+
+    // 추가부분
+    if(walletInstance) { // 계정 정보 존재하는지 확인
+      if(this.user) {// 정확히 구현필요
+        agContract.methods.setHost(walletInstance.address, this.publicKey.host, this.publicKey.issuer).send({
+          from: walletInstance.address,
+          gas: '2500000',   //send 함수 수정했음
+          value: 0
+        })
+            .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
+              console.log(`txHash: ${txHash}`);
+            })
+            .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
+              console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
+              spinner.stop(); // loading ui 종료
+              alert(JSON.stringify(this.publicKey) + "로 컨트랙에 저장했습니다."); // 입력된 host 정보
+              location.reload();
+              // this.changeUI_Hostdata_has();  //TODO : 확인필요
+            })
+            .once('error', (error) => { // error가 발생한 경우
+              alert(error.message);
+            });
+      } return; // host 정보 없으면 종료
+    }
+  },
+
+
+
+  /* 전역변수로 갖는게 맞을지 모르겠네 */
+  //TODO: 시나리오 맞게 분할할것
+    rsaGenerate: async function(hostData){
+    RSA.generate();
+    this.publicKey.host = RSA.getPublicKey();
+    this.privateKey.host = RSA.getPrivateKey();
+    this.cipherHostData = RSA.encrypt(hostData);
+    this.publicKey.issuer = RSA.getPublicKey();
+    this.privateKey.issuer = RSA.getPrivateKey();
+    console.log("Host Public Key : ",this.publicKey.host);
+    console.log("Host Private Key : ",this.privateKey.host);
+    console.log("Issuer Public Key : ",this.publicKey.host);
+    console.log("Issuer Private Key : ",this.privateKey.host);
+  },
+
+
+
+  /**
+   * << 임시 >>
+   * publidkey 가져오기
+   * @returns {Promise<void>}
+   */
+  hostDataImport: async function () {
+    const fileReader = new FileReader();
+    fileReader.readAsText(event.target.files[0]); //file 선택
+    fileReader.onload = (event) => { // 선택 후 확인
+      this.testData.hostData = event.target.result;
+      $('#message').text('hostData 로드');
+    }
+  },
+  publicKeyImport: async function () {
+    const fileReader = new FileReader();
+    fileReader.readAsText(event.target.files[0]); //file 선택
+    fileReader.onload = (event) => { // 선택 후 확인
+      this.testData.publicKey = event.target.result;
+      $('#message').text('publicKey 로드');
+    }
+  },
+  verifyTest: async function (){
+    RSA.init();
+    RSA.importKey(this.testData.publicKey);
+    console.log(RSA.getPublicKey());
+    const decipher = RSA.decrypt(this.testData.hostData);
+    alert("공개키로 복호화된 정보\n" + decipher);
+  },
+
+  /**
+   * << UI >>
+   * hostdata 있는 경우
+   * login창 없애고
+   * 로그인 버튼없애고 로그아웃 버튼으로
+   * 호스트 정보 입력창 없애고 호스트 정보 출력
+   * 호스트 정보 초기화 버튼 출력
+   *
+   * 추후 필요 정보 업데이트 요망
+   */
+  changeUI_Hostdata_has: async function () {
+    $('#loginModal').modal('hide');
+    $('#login').hide();
+    $('#logout').show();
+    $('#host_input').hide();
+
+    $('#host_data').show();
+    $('#host_session_out').show();
+    $('#host_data').append('<br>' + '<p>' + 'Host 공개키: ' + '<br>'+ this.publicKey.host + '</p>' + '<br>'
+        + '<p>' + 'Issuer 공개키: ' + '<br>'+ this.publicKey.issuer + '</p>' + '<br>'
+        + '<p>' + '현재 회원수: ' + await this.getHostCountFromContracts() + '</p>');
+  },
+
+  /**
+   * << UI >>
+   * hostdata 없는 경우
+   * 로그인부분 없애고 로그아웃 버튼으로
+   * 호스트 정보 입력창 출력
+   */
+  changeUI_Hostdata_none: async function () {
+    $('#loginModal').modal('hide');
+    $('#login').hide();
+    $('#logout').show();
+
+    $('#host_input').show();
+    $('#host_data').hide();
+    $('#host_session_out').hide();
+    $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
+  },
+
+  /**
+   * << 컨트랙트 >> | << 로그인 >>
+   * 컨트랙에서 가져온 호스트 정보 this.host에 저장
+   * @param address 계정 주소
+   * @returns {Promise<boolean>}
+   */
+  checkValidHost: async function (address) {
+    const MyInfo = await this.getHostFromContracts(address);
+
+    this.publicKey.host = MyInfo.hostKey;
+    this.publicKey.issuer = MyInfo.issuerKey;
+    console.log(RSA);
+    console.log("isJoined?: ",MyInfo.joined);
+    console.log("hk:",this.publicKey.host);
+    console.log("ik:",this.publicKey.issuer);
+    return MyInfo.joined;
+  },
+
+  /**
+   * << 로그인 >> | << Host Data >>
+   * 회원탈퇴하는 경우
+   * host 정보를 모두 ''로 보내 계정 초기화
+   * @returns {Promise<void>}
+   */
+  hostSessionOut: async function () {
+    var spinner = this.showSpinner();
+
+    this.resetHost();
+
+    const walletInstance = this.getWallet(); // 로그인된 계정 정보 확인
+    // 추가부분
+    if(walletInstance) { // 계정 정보 존재하는지 확인
+      agContract.methods.removeHost(walletInstance.address).send({
+        from: walletInstance.address,
+        gas: '2500000',   //send 함수 수정했음
+        value: 0
+      })
+          .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
+            console.log(`txHash: ${txHash}`);
+          })
+          .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
+            console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
+            spinner.stop(); // loading ui 종료
+            alert("초기화 컨트랙트를 전송했습니다."); // 입력된 host 정보
+            location.reload();
+          })
+          .once('error', (error) => { // error가 발생한 경우
+            alert(error.message);
+          });
+    }
+  },
+
+
+
+
+
+
+>>>>>>> Stashed changes
 // ####### Functions - Can't control #######
 // 확인 필요한 코드 - 확인 요청 한 후에 아래로 내릴 것
 

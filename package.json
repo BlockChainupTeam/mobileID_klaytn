@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
-    "caver-js": "^1.5.2-rc.1",
+    "caver-js": "^1.5.2-rc.2",
     "connect-privkey-to-provider": "0.0.3",
     "node-rsa": "^1.1.1",
     "spin.js": "^4.0.0",
-    "truffle": "^4.1.15"
+    "truffle": "^4.1.17"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^4.6.0",
