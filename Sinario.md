@@ -29,7 +29,7 @@
 1. User의 정보를 오프라인으로 받는다. O
 2. User의 정보를 입력한다. O
 3. Issuer Private Key를 입력하여 User의 정보를 암호화한다. O
-4. Issuer Public Key를 Blockchain에 저장한다. O
+4. Issuer Public Key를 Blockchain에 저장한다. O <br>
 < 현재 버전 추가부분>
 5. Host Private Key를 입력하여 User의 정보를 다시 한번 암호화한다. O
 6. Host Public Key를 Blockchain의 Host에 해당하는 주소에 저장한다. O
@@ -44,11 +44,11 @@
     > Host는 최초 로그인 시 자신의 신분증을 계정에 등록한다.
     1. '신분증 등록하기' 버튼 선택
     2. Issuer에게 받은 신분증 선택
-    3. 최초인 경우(사용자 서명이 없는 경우) 서명을 추가하게 됨
-1-현재버전(버전논의필요)
-    ID Card를 Issuer로부터 넘겨받은 후 바로 사용하게 됨
+    3. 최초인 경우(사용자 서명이 없는 경우) 서명을 추가하게 됨 <br>
     
-    ... PrivateKey와 이중서명된 Data파일에 대한 간수는 본인이 책임져야한다.
+- 현재버전(버전논의필요): ID Card를 Issuer로부터 넘겨받은 후 바로 사용하게 됨
+    
+    <토의 필요> PrivateKey와 이중서명된 Data파일에 대한 간수는 본인이 책임져야한다.
     (AES암호화 등 추가 암호화가 필요할듯하고 저장소에 대한 최소 보안 확보 필요.)
 
 ** Host가 사용하게 될 Klay 이슈 
@@ -85,9 +85,9 @@
 ** Verifier를 위한 ID Card 논의중
 ** 거래내역 이슈
 - 거래내역을 확인할 수 있는 방법 필요
-> 공개키로 암호화 >> 개인키로 복호화 하여 거래 내역 확인 (privacy 이슈 해결)
-> host >> key=>addr, value => 암호화(시간+업체정보+제공한 신원정보내역)
-> verifier >> key=> addr, value => 암호화(시간+이름+요청한 신원정보)
+> 공개키로 암호화 >> 개인키로 복호화 하여 거래 내역 확인 (privacy 이슈 해결) <br>
+> host >> key=>addr, value => 암호화(시간+업체정보+제공한 신원정보내역) <br>
+> verifier >> key=> addr, value => 암호화(시간+이름+요청한 신원정보) <br>
 > 위와 같은 방법으로 transaction 실행
 
 # 신분증 Form (미정)
