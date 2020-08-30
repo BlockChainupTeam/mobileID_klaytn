@@ -39,7 +39,7 @@ const App = {
   },
 
   cipherHostData: '',
-
+  IDCard: '',
   /**
    * Start에서 변경할때 꼭 확인
    */
@@ -55,16 +55,8 @@ const App = {
 
         this.auth.address = JSON.parse(walletFromSession).address;
 
-        // 2. Session에 들어온 후 해당 계정의 Host Data 불러오기
-        // const MyInfo = await this.checkValidHost(this.auth.address);
-
         // UI 통일시킬 필요 있을듯
         await this.changeUI(JSON.parse(walletFromSession));
-        // if(MyInfo){ // host정보가 입력되어 있는 경우
-        //   await this.changeUI_Hostdata_has();
-        // } else { // host정보가 입력되어 있지 않은 경우
-        //   await this.changeUI_Hostdata_none();
-        // }
 
       } catch (e) { // 유효한 계정 정보가 아닌경우
         sessionStorage.removeItem('walletInstance'); // session에서 정보 지움
@@ -87,67 +79,67 @@ const App = {
     $('#host_session_out').show(); //TODO: 임시로 만들어놓음
     $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
 
+    this.user.userType = sessionStorage.getItem("UserType");
+
     // issuer가 접속한 경우에만 호스트 데이터 입력할 수 있도록
     if (await this.callOwner() === cav.utils.toChecksumAddress(walletInstance.address)) { // Issuer 로그인 경우
       await this.issuerUI();
     } else {
       this.userUI(walletInstance);
     }
-<<<<<<< Updated upstream
-    // if (_idCard.UserType === 'Host') { // host 로그인 경우
-    //   // host session Login
-    // } else if (_idCard.UserType === 'Verifier') { // Verifier 로그인 경우
-    //   // veerifier session Login
-    // } else { // 올바르지 않은 UserType인 경우
-    //   alert("올바르지 않은 유저 타입입니다!");
-    // }
     $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
   },
+
+
 
   userUI: async function () {
   
     $('#host_session_out').show(); //TODO: 임시로 만들어놓음
     $('#tooltip').show(); //TODO: 임시로 만들어놓음
-    $('#HostPublicKey').append("Host 공개키 : " + await agContract.methods.getPublicKey(this.auth.address).call());
-=======
+    $('#HostPublicKey').append("Host 공개키 : " + await agContract.methods.getPublicKey(this.auth.address).call()); //TODO: 공개키 보여줄 필요 없음
+    if(this.user.userType === 'Host'){
+      this.hostUI(); //TODO UI 다른것으로 변경필요
+    } else if(this.user.userType === 'Verifier' ){
+      this.verifierUI();
+    } else {
+      alert("올바르지 않은 userType입니다. 신분증을 확인해주세요.");
+    }
   },
-
 
   /**
-   * << UI - USER Login >>
-   * 1. 최초 로그인시 블록에 유저 등록
+   * 필요기능:
+   * IDCard 출력하기 (QR코드 가져오기?)
+   * 신분증 삭제하기
    */
-  userUI: function (walletInstance) {
-    var spinner = this.showSpinner();
-
-    const isJoined = agContract.methods.isPublicKey().call();
-    if (!isJoined) {
-      RSA.getKey();
-      RSA.getPrivateKey();
-
-
-      agContract.methods.setPublicKey(walletInstance.address, RSA.getPublicKey()).send({
-        from: walletInstance.address,
-        gas: '2500000',   //send 함수 수정했음
-        value: 0
-      })
-          .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
-            console.log(`txHash: ${txHash}`);
-          })
-          .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
-            console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
-            spinner.stop(); // loading ui 종료
-            alert("컨트랙에 공용키를 저장했습니다."); // 입력된 host 정보
-            location.reload();
-          })
-          .once('error', (error) => { // error가 발생한 경우
-            alert(error.message);
-          });
-    }
->>>>>>> Stashed changes
+  hostUI: function () {
+    $('#host_login').show();
+    $('#host_signIn').show();
   },
 
+  verifierUI: function () {
 
+  },
+
+  hostSignIn: function () {
+    if ( (document.getElementById("host_password").value === document.getElementById("host_password_check").value) &&
+          document.getElementById("host_password").value !== '') {
+      this.user.password = document.getElementById("host_password").value;
+      console.log(this.user.password);
+      const account = cav.klay.accounts.create();
+      const userKeystore = cav.klay.accounts.encrypt(account.privateKey, this.user.password.toString());
+      const IDCard = {
+        UserType: this.user.userType,
+        Cipher: '',
+        Keystore: userKeystore,
+        IssuerSign: '',
+        UserSign: '',
+      };
+      this.fileDownload(JSON.stringify(IDCard, null, 8), "IDCard", "application/json"); // 최초의 IDCard
+      location.reload();
+    } else {
+      alert("비밀번호를 다시 확인해주세요!");
+    }
+  },
 
 
   setUserData: function () {
@@ -165,11 +157,32 @@ const App = {
   },
 
   /**
+   * << UI - Issuer >>
+   * Issuer 로그인 경우
+   * - Issuer == owner인 경우
+   * @returns {Promise<void>}
+   */
+  issuerUI: async function () {
+    $('#issuer_notice').show();
+    // $('#data_input').show();
+    let isIssuerPublicKey = await agContract.methods.isIssuerPublicKey().call();
+    /* 재발급 받는 방향도 고려해봐야할듯 */
+    if (isIssuerPublicKey) { // 이미 키가 저장되어 있다면
+      $('#Button_issuer_key').hide();
+      $('#IssuerPublicKey').append("Issuer 공개키 : " + await agContract.methods.getIssuerPublicKey().call()); //TODO: 필요없으면 제거해도 됨
+    } else { // 키가 저장되어 있지 않다면
+      alert("키를 발급받으세요!");
+      $('#Button_issuer_key').show();
+    }
+  },
+
+
+  /**
    * << UserData - file export >>
    * user가 입력한 data를 파일로 출력
    */
   exportUserData: async function () {
-  
+
     var spinner = this.showSpinner();
     const privateKey = this.auth.keystore;
     this.setUserData();
@@ -183,7 +196,7 @@ const App = {
     RSA.getKey();
     const HostPrivateKey = RSA.getPrivateKey();
     const HostPublicKey = RSA.getPublicKey();
-    this.fileDownload(HostPrivateKey, this.user.name+'-PrivateKey', 'application/pem');
+    await this.fileDownload(HostPrivateKey, this.user.name + '-PrivateKey', 'application/pem');
     const cipher = RSA.encryptData(HostPrivateKey, cipherPre);
     const account = cav.klay.accounts.create();
     const userKeystore = cav.klay.accounts.encrypt(account.privateKey, this.user.password.toString()); // !!ERROR!!
@@ -199,7 +212,7 @@ const App = {
         .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
           console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
           spinner.stop(); // loading ui 종료
-          alert("컨트랙에 공용키 (" + this.user.name +"-"+ HostPublicKey + ")를 저장했습니다."); // 입력된 host 정보
+          alert("컨트랙에 공개키 (" + HostPublicKey + ")를 저장했습니다."); // 입력된 host 정보
           location.reload();
         })
         .once('error', (error) => { // error가 발생한 경우
@@ -211,20 +224,14 @@ const App = {
       UserType: this.user.userType,
       cipher: cipher,
       keystore: userKeystore
-    }; // TODO Address 추가할지 확인
+    };
 
-<<<<<<< Updated upstream
-    this.fileDownload(JSON.stringify(IDCard,null,8), "IDCard-" + this.user.name,  "application/json");
-=======
-    this.fileDownload(JSON.stringify(IDCard, null, 8), "IDCard-" + this.user.name,  "application/json");
->>>>>>> Stashed changes
+    await this.fileDownload(JSON.stringify(IDCard, null, 8), "IDCard-" + this.user.name, "application/json");
 
     $('#privateKeyModal').modal('hide');
   },
 
 
-<<<<<<< Updated upstream
-=======
 
 
 
@@ -238,163 +245,6 @@ const App = {
 
 
 
-  // 임시 - 기능구현
-  /**
-   * << 컨트랙트 >>
-   * Host data를 폼에 맞게 입력하면, 해당 데이터를 contract로 블록에 저장
-   * 암호화 필요
-   * @returns {Promise<void>}
-   */
-  inputHostData: async function () {
-
-    // this.user.address = document.getElementById("host_address").value;
-    // this.user.name = document.getElementById("host_name").value;
-    // this.user.id_number = document.getElementById("host_id_front").value + "-" + document.getElementById("host_id_rear").value;
-    // this.user.phone = document.getElementById("host_phone").value;
-
-    if (!cav.utils.isAddress(this.user.address)) {
-      alert("올바른 주소가 아닙니다!!");
-      return;
-    }
-
-    const walletInstance = this.getWallet(); // 로그인된 계정 정보 확인
-    const hostData = {host: this.host};
-
-    await this.rsaGenerate(hostData);
-    await this.fileDownload(this.cipherHostData, 'hostData', 'txt');
-    await this.fileDownload(this.privateKey.host, 'privateKey', 'dll');
-    await this.fileDownload(this.publicKey.host, 'publicKey', 'application/pem');
-
-    // 추가부분
-    if(walletInstance) { // 계정 정보 존재하는지 확인
-      if(this.user) {// 정확히 구현필요
-        agContract.methods.setHost(walletInstance.address, this.publicKey.host, this.publicKey.issuer).send({
-          from: walletInstance.address,
-          gas: '2500000',   //send 함수 수정했음
-          value: 0
-        })
-            .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
-              console.log(`txHash: ${txHash}`);
-            })
-            .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
-              console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
-              spinner.stop(); // loading ui 종료
-              alert(JSON.stringify(this.publicKey) + "로 컨트랙에 저장했습니다."); // 입력된 host 정보
-              location.reload();
-              // this.changeUI_Hostdata_has();  //TODO : 확인필요
-            })
-            .once('error', (error) => { // error가 발생한 경우
-              alert(error.message);
-            });
-      } return; // host 정보 없으면 종료
-    }
-  },
-
-
-
-  /* 전역변수로 갖는게 맞을지 모르겠네 */
-  //TODO: 시나리오 맞게 분할할것
-    rsaGenerate: async function(hostData){
-    RSA.generate();
-    this.publicKey.host = RSA.getPublicKey();
-    this.privateKey.host = RSA.getPrivateKey();
-    this.cipherHostData = RSA.encrypt(hostData);
-    this.publicKey.issuer = RSA.getPublicKey();
-    this.privateKey.issuer = RSA.getPrivateKey();
-    console.log("Host Public Key : ",this.publicKey.host);
-    console.log("Host Private Key : ",this.privateKey.host);
-    console.log("Issuer Public Key : ",this.publicKey.host);
-    console.log("Issuer Private Key : ",this.privateKey.host);
-  },
-
-
-
-  /**
-   * << 임시 >>
-   * publidkey 가져오기
-   * @returns {Promise<void>}
-   */
-  hostDataImport: async function () {
-    const fileReader = new FileReader();
-    fileReader.readAsText(event.target.files[0]); //file 선택
-    fileReader.onload = (event) => { // 선택 후 확인
-      this.testData.hostData = event.target.result;
-      $('#message').text('hostData 로드');
-    }
-  },
-  publicKeyImport: async function () {
-    const fileReader = new FileReader();
-    fileReader.readAsText(event.target.files[0]); //file 선택
-    fileReader.onload = (event) => { // 선택 후 확인
-      this.testData.publicKey = event.target.result;
-      $('#message').text('publicKey 로드');
-    }
-  },
-  verifyTest: async function (){
-    RSA.init();
-    RSA.importKey(this.testData.publicKey);
-    console.log(RSA.getPublicKey());
-    const decipher = RSA.decrypt(this.testData.hostData);
-    alert("공개키로 복호화된 정보\n" + decipher);
-  },
-
-  /**
-   * << UI >>
-   * hostdata 있는 경우
-   * login창 없애고
-   * 로그인 버튼없애고 로그아웃 버튼으로
-   * 호스트 정보 입력창 없애고 호스트 정보 출력
-   * 호스트 정보 초기화 버튼 출력
-   *
-   * 추후 필요 정보 업데이트 요망
-   */
-  changeUI_Hostdata_has: async function () {
-    $('#loginModal').modal('hide');
-    $('#login').hide();
-    $('#logout').show();
-    $('#host_input').hide();
-
-    $('#host_data').show();
-    $('#host_session_out').show();
-    $('#host_data').append('<br>' + '<p>' + 'Host 공개키: ' + '<br>'+ this.publicKey.host + '</p>' + '<br>'
-        + '<p>' + 'Issuer 공개키: ' + '<br>'+ this.publicKey.issuer + '</p>' + '<br>'
-        + '<p>' + '현재 회원수: ' + await this.getHostCountFromContracts() + '</p>');
-  },
-
-  /**
-   * << UI >>
-   * hostdata 없는 경우
-   * 로그인부분 없애고 로그아웃 버튼으로
-   * 호스트 정보 입력창 출력
-   */
-  changeUI_Hostdata_none: async function () {
-    $('#loginModal').modal('hide');
-    $('#login').hide();
-    $('#logout').show();
-
-    $('#host_input').show();
-    $('#host_data').hide();
-    $('#host_session_out').hide();
-    $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
-  },
-
-  /**
-   * << 컨트랙트 >> | << 로그인 >>
-   * 컨트랙에서 가져온 호스트 정보 this.host에 저장
-   * @param address 계정 주소
-   * @returns {Promise<boolean>}
-   */
-  checkValidHost: async function (address) {
-    const MyInfo = await this.getHostFromContracts(address);
-
-    this.publicKey.host = MyInfo.hostKey;
-    this.publicKey.issuer = MyInfo.issuerKey;
-    console.log(RSA);
-    console.log("isJoined?: ",MyInfo.joined);
-    console.log("hk:",this.publicKey.host);
-    console.log("ik:",this.publicKey.issuer);
-    return MyInfo.joined;
-  },
 
   /**
    * << 로그인 >> | << Host Data >>
@@ -435,29 +285,10 @@ const App = {
 
 
 
->>>>>>> Stashed changes
 // ####### Functions - Can't control #######
 // 확인 필요한 코드 - 확인 요청 한 후에 아래로 내릴 것
 
-  /**
-   * << UI - Issuer >>
-   * Issuer 로그인 경우
-   * - Issuer == owner인 경우
-   * @returns {Promise<void>}
-   */
-  issuerUI: async function () {
-    $('#issuer_notice').show();
-    $('#data_input').show();
-    let isIssuerPublicKey = await agContract.methods.isIssuerPublicKey().call();
-    /* 재발급 받는 방향도 고려해봐야할듯 */
-    if (isIssuerPublicKey) { // 이미 키가 저장되어 있다면
-      $('#Button_issuer_key').hide();
-      $('#IssuerPublicKey').append("Issuer 공개키 : " + await agContract.methods.getIssuerPublicKey().call()); //TODO: 필요없으면 제거해도 됨
-    } else { // 키가 저장되어 있지 않다면
-      alert("키를 발급받으세요!");
-      $('#Button_issuer_key').show();
-    }
-  },
+
 
   /**
    * << Issuer - 키 생성 >>
@@ -482,7 +313,7 @@ const App = {
         .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
           console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
           spinner.stop(); // loading ui 종료
-          alert("컨트랙에 공용키 (" + issuerPublicKey + ")를 저장했습니다."); // 입력된 host 정보
+          alert("컨트랙에 공개키 (" + issuerPublicKey + ")를 저장했습니다."); // 입력된 host 정보
           location.reload();
         })
         .once('error', (error) => { // error가 발생한 경우
@@ -548,7 +379,7 @@ const App = {
     userData.readAsText(event.target.files[0]); //file 선택
     userData.onload = (event) => { // 선택 후 확인
       try{
-        if (!this.checkValidUserData(event.target.result)){ // 올바른 키스토어 파일인지 확인
+        if (!this.checkValidUserData(event.target.result)){ // 올바른 파일인지 확인
           $('#privateKey_message').text('유효하지 않은 userData 파일입니다.');
           return;
         } //검증통과
@@ -580,22 +411,6 @@ const App = {
 
 
 
-  /**
-   *  << 컨트랙트 >>
-   *  컨트랙트에서 host정보 가져옴
-   * @param address : 현재 사용자 계정 주소
-   * @returns {Promise<*>}
-   */
-  getHostFromContracts: async function (address) {
-    return await agContract.methods.getHost(address).call();
-  },
-  getHostCountFromContracts: async function () {
-    return await agContract.methods.getHostCount().call();
-  },
-
-
-
-
 
 
 
@@ -621,12 +436,13 @@ const App = {
 
         this.user.userType = JSON.parse(event.target.result).UserType;
         if(this.user.userType === 'Host' || this.user.userType ===  'Verifier'){
-          keystore = JSON.parse(event.target.result).keystore;
+          keystore = JSON.parse(event.target.result).Keystore;
         } else {
           keystore = event.target.result;
         }
 
         this.auth.keystore = keystore;
+        sessionStorage.setItem('UserType', this.user.userType);
         $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
         document.querySelector('#input-password').focus();
       } catch (event) {
@@ -658,6 +474,7 @@ const App = {
         const privateKey = cav.klay.accounts.decrypt(this.auth.keystore, this.auth.password).privateKey;
         this.integrateWallet(privateKey);
       } catch (e) {
+        console.log(e);
         $('#message').text('비밀번호가 일치하지 않습니다.');
       }
     }
@@ -704,7 +521,7 @@ const App = {
     if (this.user.userType === 'Issuer') {
       parseKeystore = JSON.parse(keystore);
     } else {
-      parseKeystore = JSON.parse(keystore).keystore;
+      parseKeystore = JSON.parse(keystore).Keystore;
     }
 
     const isValidKeystoreV3 = parseKeystore.version &&
@@ -733,7 +550,6 @@ const App = {
     cav.klay.accounts.wallet.add(walletInstance); // caver instance를 통해 계정 정보를 쉽게 가져올 수 있음
 
     sessionStorage.setItem('walletInstance', JSON.stringify(walletInstance));
-
     location.reload();
   },
 
@@ -772,7 +588,7 @@ const App = {
   /**
    * << 로그인 >>
    * 계정 로그아웃
-   * 세션과 cav.clay.accounts에서 지움
+   * 세션과 cav.klay.accounts에서 지움
    */
   removeWallet: function () {
     cav.klay.accounts.wallet.clear();

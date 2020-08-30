@@ -40,10 +40,17 @@
       </button>
       <button type="button"
               class="btn btn-info pull-right"
-              id="userLogin"
-              data-toggle="modal"
-              data-target="#loginModal">
-        User 로그인
+              id="hostLogin"
+              onclick="App.user.userType = 'Host';
+                       App.hostUI()">
+        Host 로그인
+      </button>
+      <button type="button"
+              class="btn btn-info pull-right"
+              id="verifierLogin"
+              onclick="App.user.userType = 'Verifier';
+                       App.verifierUI()">
+        Verifier 로그인
       </button>
       <button type="button"
               class="btn btn-info pull-right"
@@ -64,6 +71,43 @@
     </div>
   </div>
 </div>
+
+<!-- Host 컨테이너 -->
+<div class="container" id="container_host">
+  <div class="text-center" id="host_signIn" style="display: none;">
+    <button type="button"
+            class="btn btn-info pull-left"
+            id="Button_host_signIn"
+            onclick="$('#host_login').hide();
+                     $('#host_SignIn_Password').show();">
+      Host 회원가입
+    </button>
+  </div>
+  <div class="text-center" id="host_login" style="display: none;">
+    <button type="button"
+            class="btn btn-info pull-left"
+            id="Button_host_login"
+            data-toggle="modal" data-target="#loginModal">
+      Host 로그인
+    </button>
+  </div>
+</div>
+
+
+
+<div class="container">
+  <form id=host_SignIn_Password style="display: none">
+    <p>사용할 비밀번호: <input type="text" id="host_password"></p>
+    <p>비밀번호 확인: <input type="text" id="host_password_check"></p>
+    <button type="button" class="btn btn-info pull-left" id="Button_host_SignIn_Confirm"
+            onclick="App.hostSignIn()">확인
+    </button>
+  </form>
+</div>
+
+
+
+
 
 <!--- 임시 --->
 <div class="text-center" id="IssuerPublicKey"></div>
@@ -101,7 +145,7 @@
     </button>
   </p>
   <form id=host_data_input style="display: none">
-    <p>사용할 비밀번호: <input type="text" id="host_password"></p></p>
+    <!--키스토어 필요-->
     <p>이름: <input type="text" id="host_name"></p>
     <p>주민등록번호: <input type="text" id="host_id_front" size="10" maxlength="6">
       -<input type="password" id="host_id_rear" size="10" maxlength="7"></p>
@@ -110,7 +154,7 @@
             data-toggle="modal" data-target="#privateKeyModal">확인</button>
   </form>
   <form id="verifier_data_input" style="display: none">
-    <p>사용할 비밀번호: <input type="text" id="verifier_password"></p></p>
+    <!--키스토어 필요-->
     <p>기업이름: <input type="text" id="verifier_name"></p>
     <p>등록번호: <input type="text" id="verifier_id" size="10" maxlength="6">
     <p>전화번호: <input type="tel" id="verifier_phone" size="20"></p>

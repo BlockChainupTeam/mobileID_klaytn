@@ -36,4 +36,9 @@ RSA.decryptData = function (publicKey, userData) {
     return key.decryptPublic(userData, 'utf8');
 }
 
+RSA.sign = function (privateKey, userData) {
+    key = new NodeRSA(privateKey,'pkcs8-private-pem');
+    return key.sign(userData);
+}
+
 module.exports = RSA;
