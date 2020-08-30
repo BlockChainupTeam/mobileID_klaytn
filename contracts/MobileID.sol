@@ -1,13 +1,13 @@
 pragma solidity ^0.4.24;
-
+pragma experimental ABIEncoderV2;
 contract MobileID {
 
     struct keyRing{
         bool joined;
         string publicKey;
     }
-
     mapping(address => keyRing) public pks;     // 공개키보관
+    mapping(address => string[]) public logs; 
     uint public hostCount; //회원 수 카운팅
     bool private isIssuerKey = false;
     address public owner;
@@ -15,7 +15,12 @@ contract MobileID {
     constructor() public {
         owner = msg.sender;
     }
-    
+    function addLog(address addr, string content) public{
+        logs[addr].push(content);
+    }
+    function getLog(address addr) public view returns (string[]){
+    	return logs[addr];
+    }
     function setIssuerPublicKey(string _issuerPublicKey) public {
         pks[owner].publicKey = _issuerPublicKey;
         isIssuerKey = true;
