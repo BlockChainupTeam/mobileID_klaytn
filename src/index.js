@@ -124,7 +124,6 @@ const App = {
     if ( (document.getElementById("host_password").value === document.getElementById("host_password_check").value) &&
           document.getElementById("host_password").value !== '') {
       this.user.password = document.getElementById("host_password").value;
-      console.log(this.user.password);
       const account = cav.klay.accounts.create();
       const userKeystore = cav.klay.accounts.encrypt(account.privateKey, this.user.password.toString());
       const IDCard = {
@@ -138,6 +137,82 @@ const App = {
       location.reload();
     } else {
       alert("비밀번호를 다시 확인해주세요!");
+    }
+  },
+
+  issueUserKeypair: function () {
+    RSA.getkey();
+    const privateKey = RSA.getPrivateKey();
+    const publicKey = RSA.getPublicKey();
+    return {
+      privateKey: privateKey,
+      publicKey: publicKey
+    };
+  },
+
+  postPublicKeyOnContract: async function (address, publicKey) {
+    await agContract.methods.setPublicKey(address, publicKey).send({
+      from: await this.callOwner(),
+      gas: '2500000',
+      value: 0
+    })
+        .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
+          console.log(`txHash: ${txHash}`);
+        })
+        .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
+          console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
+          spinner.stop(); // loading ui 종료
+          alert("컨트랙에 공개키 (" + HostPublicKey + ")를 저장했습니다."); // 입력된 host 정보
+          location.reload();
+        })
+        .once('error', (error) => { // error가 발생한 경우
+          alert(error.message);
+        });
+  },
+
+  handleUserImport: async function () {
+    const fileReader = new FileReader();
+    fileReader.readAsText(event.target.files[0]); //file 선택
+    let keystore;
+
+    fileReader.onload = async (event) => { // 선택 후 확인
+      try {
+        if (!this.checkValidKeystore(event.target.result)) { // 올바른 키스토어 파일인지 확인
+          $('#message').text('유효하지 않은 keystore 파일입니다.');
+          return;
+        } //검증통과
+
+        const IDCard = JSON.parse(event.target.result);
+
+        this.user.userType = IDCard.UserType;
+        if (this.user.userType === 'Host' || this.user.userType === 'Verifier') {
+          keystore = IDCard.Keystore;
+          if (IDCard.Cipher === '' || IDCard.IssuerSign === '') {
+            $('#message').text('아직 발급되지 않은 ID Card 입니다. 기관에서 발급 후에 사용해주세요.');
+          } else if (IDCard.UserSign === '') {
+            $('#loginModal').modal('hide');
+            alert("최초 로그인입니다! 자동으로 서명을 진행합니다. 서명 후에 다시 로그인 해 주세요.");
+            const keypair = this.issueUserKeypair();
+
+            const cipher = RSA.encryptData(keypair.privateKey, IDCard.cipher);
+            // TODO: fs로 업데이트 진행 - cipher 그대로 업데이트 하면 됨.
+
+            this.fileDownload(JSON.stringify(keypair.privateKey, null, 8), "PrivateKey-" + IDCard.keystore.address, "application/json"); // 최초의 IDCard
+            await this.postPublicKeyOnContract(IDCard.keystore.address, keypair.publicKey);
+            location.reload();
+          }
+        } else {
+          $('#message').text('올바르지 않은 유저 타입입니다.');
+        }
+
+        this.auth.keystore = keystore;
+        sessionStorage.setItem('UserType', this.user.userType);
+        $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
+        document.querySelector('#input-password').focus();
+      } catch (event) {
+        $('#message').text('유효하지 않은 keystore 파일입니다.');
+        return;
+      }
     }
   },
 
@@ -218,12 +293,14 @@ const App = {
         .once('error', (error) => { // error가 발생한 경우
           alert(error.message);
         });
-    
+
 
     const IDCard = {
       UserType: this.user.userType,
-      cipher: cipher,
-      keystore: userKeystore
+      Cipher: '',
+      Keystore: userKeystore,
+      IssuerSign: '',
+      UserSign: '',
     };
 
     await this.fileDownload(JSON.stringify(IDCard, null, 8), "IDCard-" + this.user.name, "application/json");
@@ -435,10 +512,10 @@ const App = {
         } //검증통과
 
         this.user.userType = JSON.parse(event.target.result).UserType;
-        if(this.user.userType === 'Host' || this.user.userType ===  'Verifier'){
-          keystore = JSON.parse(event.target.result).Keystore;
-        } else {
+        if(this.user.userType === 'Issuer'){
           keystore = event.target.result;
+        } else {
+          $('#message').text('올바르지 않은 UserType입니다.');
         }
 
         this.auth.keystore = keystore;
