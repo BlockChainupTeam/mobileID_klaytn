@@ -98,11 +98,44 @@ const App = {
     $('#tooltip').show(); //TODO: 임시로 만들어놓음
     $('#HostPublicKey').append("Host 공개키 : " + await agContract.methods.getPublicKey(this.auth.address).call()); //TODO: 공개키 보여줄 필요 없음
     if(this.user.userType === 'Host'){
-      this.hostUI(); //TODO UI 다른것으로 변경필요
+      this.hostUI();
     } else if(this.user.userType === 'Verifier' ){
       this.verifierUI();
     } else {
       alert("올바르지 않은 userType입니다. 신분증을 확인해주세요.");
+    }
+  },
+
+  /**
+   * TODO: QR코드 생성
+   */
+  sendIDCard: function () {
+    //ID Card로부터 QR코드 생성
+  },
+
+  /**
+   * << 컨트랙트 >>
+   * Button_delete_IDCard
+   * 블록 내 mapping 되어있는 공개키 삭제
+   * TODO: 함수 확인 필요 - .call() / .send()? - 구체적인 시퀀스 필요
+   */
+  deleteIDCard: function () {
+    if(agContract.methods.isPublicKey(this.auth.address).call()){
+      agContract.methods.deletePublicKey(this.auth.address).call();
+      alert("컨트랙의 공개키를 삭제하였습니다.");
+    } else {
+      alert("컨트랙에 공개키가 존재하지 않습니다.");
+    }
+  },
+
+  /**
+   * TODO: records 출력하면 됨
+   * Button_
+   */
+  checkRecords: function () {
+    const records = agContract.methods.getRecords(this.auth.address).call();
+    for(var i = 0; i<records.length; i++) {
+      $('#print_user_records').append(records[i] + "<br>");
     }
   },
 
@@ -112,8 +145,7 @@ const App = {
    * 신분증 삭제하기
    */
   hostUI: function () {
-    $('#host_login').show();
-    $('#host_signIn').show();
+    $('#container_host_function').show();
   },
 
   verifierUI: function () {
@@ -196,6 +228,7 @@ const App = {
 
             const cipher = RSA.encryptData(keypair.privateKey, IDCard.cipher);
             // TODO: fs로 업데이트 진행 - cipher 그대로 업데이트 하면 됨.
+            // cipher update
 
             this.fileDownload(JSON.stringify(keypair.privateKey, null, 8), "PrivateKey-" + IDCard.keystore.address, "application/json"); // 최초의 IDCard
             await this.postPublicKeyOnContract(IDCard.keystore.address, keypair.publicKey);
@@ -204,14 +237,13 @@ const App = {
         } else {
           $('#message').text('올바르지 않은 유저 타입입니다.');
         }
-
         this.auth.keystore = keystore;
+        this.auth.address = keystore.address;
         sessionStorage.setItem('UserType', this.user.userType);
         $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
         document.querySelector('#input-password').focus();
       } catch (event) {
         $('#message').text('유효하지 않은 keystore 파일입니다.');
-        return;
       }
     }
   },
@@ -239,7 +271,6 @@ const App = {
    */
   issuerUI: async function () {
     $('#issuer_notice').show();
-    // $('#data_input').show();
     let isIssuerPublicKey = await agContract.methods.isIssuerPublicKey().call();
     /* 재발급 받는 방향도 고려해봐야할듯 */
     if (isIssuerPublicKey) { // 이미 키가 저장되어 있다면
@@ -511,7 +542,7 @@ const App = {
           return;
         } //검증통과
 
-        this.user.userType = JSON.parse(event.target.result).UserType;
+        // this.user.userType = JSON.parse(event.target.result).UserType;
         if(this.user.userType === 'Issuer'){
           keystore = event.target.result;
         } else {
@@ -551,7 +582,6 @@ const App = {
         const privateKey = cav.klay.accounts.decrypt(this.auth.keystore, this.auth.password).privateKey;
         this.integrateWallet(privateKey);
       } catch (e) {
-        console.log(e);
         $('#message').text('비밀번호가 일치하지 않습니다.');
       }
     }

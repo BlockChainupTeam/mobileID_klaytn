@@ -42,14 +42,16 @@
               class="btn btn-info pull-right"
               id="hostLogin"
               onclick="App.user.userType = 'Host';
-                       App.hostUI()">
+                       $('#host_signIn').show();
+                       $('#host_login').show();">
         Host 로그인
       </button>
       <button type="button"
               class="btn btn-info pull-right"
               id="verifierLogin"
               onclick="App.user.userType = 'Verifier';
-                       App.verifierUI()">
+                       $('#verifier_signIn').show();
+                       $('#verifier_login').show();">
         Verifier 로그인
       </button>
       <button type="button"
@@ -72,8 +74,8 @@
   </div>
 </div>
 
-<!-- Host 컨테이너 -->
-<div class="container" id="container_host">
+<!-- Host login session 컨테이너 -->
+<div class="container" id="container_host_login">
   <div class="text-center" id="host_signIn" style="display: none;">
     <button type="button"
             class="btn btn-info pull-left"
@@ -92,6 +94,37 @@
     </button>
   </div>
 </div>
+
+
+<!-- host function session 컨테이너 --->
+<div class="container" id="container_host_function" style="display: none;">
+  <div class="text-center" id="send_IDCard">
+    <button type="button"
+            class="btn btn-info pull-left"
+            id="BUtton_host_send_idCard"
+            onclick="App.sendIDCard()">
+      IDCard 전달하기 - QR코드 생성
+    </button>
+  </div>
+  <div class="text-center" id="delete_IDCard">
+    <button type="button"
+            class="btn btn-info pull-left"
+            id="BUtton_host_delete_IDCard"
+            onclick="App.deleteIDCard()">
+      IDCard 삭제하기
+    </button>
+  </div>
+  <div class="text-center" id="check_records">
+    <button type="button"
+            class="btn btn-info pull-left"
+            id="BUtton_host_check_records"
+            onclick="App.checkRecords()">
+      기록 확인하기
+    </button>
+  </div>
+</div>
+
+<div class="container" id="print_user_records"></div>
 
 
 
@@ -184,7 +217,7 @@
         <div class="form-group">
           <label for="keystore">Keystore</label>
           <input type="file" id="keystore"
-                 onchange="if(App.user.userType === Issuer) App.handleImport();
+                 onchange="if(App.user.userType === 'Issuer') App.handleImport();
                            else App.handleUserImport();">
         </div>
         <div class="form-group">

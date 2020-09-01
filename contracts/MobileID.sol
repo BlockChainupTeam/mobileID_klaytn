@@ -1,4 +1,5 @@
 pragma solidity ^0.4.24;
+pragma experimental ABIEncoderV2;
 
 contract MobileID {
 
@@ -7,7 +8,10 @@ contract MobileID {
         string publicKey;
     }
 
-    mapping(address => keyRing) public pks;     // 공개키보관
+    mapping ( address => keyRing ) public pks;     // 공개키보관
+
+    mapping ( address => string[] ) public records;
+
     bool private isIssuerKey = false;
     address public owner;
 
@@ -39,6 +43,18 @@ contract MobileID {
 
     function isPublicKey (address _addr) public returns (bool) {
         return pks[_addr].joined;
+    }
+
+    function deletePublicKey (address _addr) public {
+        delete pks[_addr];
+    }
+
+    function setRecords (address _addr, string _record) {
+        records[_addr].push(_record);
+    }
+
+    function getRecords (address _addr) returns (string[]){
+        return records[_addr];
     }
 
     function getBalance() public view returns (uint) {
