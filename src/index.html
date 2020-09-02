@@ -162,7 +162,8 @@
             class="btn btn-info"
             id="Button_UserType_Host"
 
-            onclick="$('#host_data_input').show();
+            onclick="$('#Button_Issuer_Bring_IDCard').show()
+                     $('#host_data_input').show();
                      $('#verifier_data_input').hide();
                      App.user.userType='Host'">
       Host
@@ -171,12 +172,17 @@
             class="btn btn-info"
             id="Button_UserType_Verifier"
 
-            onclick="$('#verifier_data_input').show();
+            onclick="$('#Button_Issuer_Bring_IDCard').show()
+                     $('#verifier_data_input').show();
                      $('#host_data_input').hide();
                       App.user.userType='Verifier'">
       Verifier
     </button>
   </p>
+  <button type="button" class="btn btn-info pull-left" id="Button_Issuer_Bring_IDCard" style="display: none;"
+          data-toggle="modal" data-target="#IDCardModal">
+    IDCard 입력하기
+  </button><br><br>
   <form id=host_data_input style="display: none">
     <!--키스토어 필요-->
     <p>이름: <input type="text" id="host_name"></p>
@@ -230,6 +236,32 @@
         <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
         <button type="button" class="btn btn-primary" id="Login_submit"
                 onclick="App.handleLogin()">제출</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+<!--- IDCard 입력용 모달 ---->
+<div class="modal fade" tabindex="-1" role="dialog" id="IDCardModal">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="keystore">ID Card</label>
+          <input type="file" id="IDCard"
+                 onchange="App.userDataImport();">
+        </div>
+        <div class="form-group">
+          <label for="input-password">비밀번호</label>
+          <input type="password" class="form-control" id="input_IDCard_Password" onchange="App.handlePassword()">
+          <p class="help-block" id="IDCard_message"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+        <button type="button" class="btn btn-primary" id="IDCard_submit"
+                onclick="App.handleIDCardLogin()">제출</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->

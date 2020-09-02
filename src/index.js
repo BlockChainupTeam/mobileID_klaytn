@@ -134,7 +134,7 @@ const App = {
    */
   checkRecords: function () {
     const records = agContract.methods.getRecords(this.auth.address).call();
-    for(var i = 0; i<records.length; i++) {
+    for(let i = 0; i<records.length; i++) {
       $('#print_user_records').append(records[i] + "<br>");
     }
   },
@@ -233,15 +233,17 @@ const App = {
             this.fileDownload(JSON.stringify(keypair.privateKey, null, 8), "PrivateKey-" + IDCard.keystore.address, "application/json"); // 최초의 IDCard
             await this.postPublicKeyOnContract(IDCard.keystore.address, keypair.publicKey);
             location.reload();
+          } else {
+            this.auth.keystore = keystore;
+            this.auth.address = keystore.address;
+            sessionStorage.setItem('UserType', this.user.userType);
+            $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
+            document.querySelector('#input-password').focus();
           }
         } else {
           $('#message').text('올바르지 않은 유저 타입입니다.');
         }
-        this.auth.keystore = keystore;
-        this.auth.address = keystore.address;
-        sessionStorage.setItem('UserType', this.user.userType);
-        $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
-        document.querySelector('#input-password').focus();
+
       } catch (event) {
         $('#message').text('유효하지 않은 keystore 파일입니다.');
       }
@@ -274,8 +276,9 @@ const App = {
     let isIssuerPublicKey = await agContract.methods.isIssuerPublicKey().call();
     /* 재발급 받는 방향도 고려해봐야할듯 */
     if (isIssuerPublicKey) { // 이미 키가 저장되어 있다면
-      $('#Button_issuer_key').hide();
+      $('#Button_issuer_key').show().append("!재발급!");
       $('#IssuerPublicKey').append("Issuer 공개키 : " + await agContract.methods.getIssuerPublicKey().call()); //TODO: 필요없으면 제거해도 됨
+      $('#data_input').show();
     } else { // 키가 저장되어 있지 않다면
       alert("키를 발급받으세요!");
       $('#Button_issuer_key').show();
@@ -293,50 +296,40 @@ const App = {
     const privateKey = this.auth.keystore;
     this.setUserData();
 
+
+
     const userData = {
       name: this.user.name,
       id_number: this.user.id_number,
       phone: this.user.phone
     }
-    const cipherPre = RSA.encryptData(privateKey, userData);
-    RSA.getKey();
-    const HostPrivateKey = RSA.getPrivateKey();
-    const HostPublicKey = RSA.getPublicKey();
-    await this.fileDownload(HostPrivateKey, this.user.name + '-PrivateKey', 'application/pem');
-    const cipher = RSA.encryptData(HostPrivateKey, cipherPre);
-    const account = cav.klay.accounts.create();
-    const userKeystore = cav.klay.accounts.encrypt(account.privateKey, this.user.password.toString()); // !!ERROR!!
-    console.log(userKeystore.address);
-    await agContract.methods.setPublicKey(userKeystore.address, HostPublicKey).send({
-      from: await this.callOwner(),
-      gas: '2500000',
-      value: 0
-    })
-        .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
-          console.log(`txHash: ${txHash}`);
-        })
-        .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
-          console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
-          spinner.stop(); // loading ui 종료
-          alert("컨트랙에 공개키 (" + HostPublicKey + ")를 저장했습니다."); // 입력된 host 정보
-          location.reload();
-        })
-        .once('error', (error) => { // error가 발생한 경우
-          alert(error.message);
-        });
 
+    const cipher = RSA.encryptData(privateKey, userData);
 
     const IDCard = {
       UserType: this.user.userType,
-      Cipher: '',
+      Cipher: cipher,
       Keystore: userKeystore,
       IssuerSign: '',
       UserSign: '',
     };
 
+
     await this.fileDownload(JSON.stringify(IDCard, null, 8), "IDCard-" + this.user.name, "application/json");
 
     $('#privateKeyModal').modal('hide');
+  },
+
+  handleIDCardLogin: async function () {
+    if (this.auth.accessType === 'keystore') {
+      try{ //caver instance 활용
+        //키스토어와 비밀번호로 비밀키(privateKey)를 가져옴
+        const privateKey = cav.klay.accounts.decrypt(this.auth.keystore, this.auth.password).privateKey;
+        location.reload();
+      } catch (e) {
+        $('#message').text('비밀번호가 일치하지 않습니다.');
+      }
+    }
   },
 
 
@@ -489,10 +482,18 @@ const App = {
       try{
         if (!this.checkValidUserData(event.target.result)){ // 올바른 파일인지 확인
           $('#privateKey_message').text('유효하지 않은 userData 파일입니다.');
-          return;
-        } //검증통과
-        this.cipherHostData = JSON.parse(event.target.result).cipher;
-        $('#decrypt_message').text('userData 통과. ');
+
+        } else { //검증통과
+          const IDCard = JSON(event.target.result);
+          if (IDCard.cipher !== '') {
+            this.user.userType = IDCard.userType;
+            this.auth.keystore = IDCard.keystore;
+            this.cipherHostData = IDCard.cipher;
+            $('#decrypt_message').text('userData 통과. ');
+          } else {
+            alert("이미 입력된 IDCard입니다. IDCard를 확인하세요.");
+          }
+        }
       } catch (event) {
         $('#decrypt_message').text('유효하지 않은 userData 파일입니다.');
       }
