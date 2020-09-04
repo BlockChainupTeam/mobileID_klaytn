@@ -26,6 +26,7 @@ const App = {
     accessType: 'keystore',
     keystore: '',
     password: '',
+    privateKey: '',
     address: ''
     //개인주소 추가
   },
@@ -93,7 +94,7 @@ const App = {
 
 
   userUI: async function () {
-  
+
     $('#host_session_out').show(); //TODO: 임시로 만들어놓음
     $('#tooltip').show(); //TODO: 임시로 만들어놓음
     $('#HostPublicKey').append("Host 공개키 : " + await agContract.methods.getPublicKey(this.auth.address).call()); //TODO: 공개키 보여줄 필요 없음
@@ -173,7 +174,7 @@ const App = {
   },
 
   issueUserKeypair: function () {
-    RSA.getkey();
+    RSA.getKey();
     const privateKey = RSA.getPrivateKey();
     const publicKey = RSA.getPublicKey();
     return {
@@ -182,9 +183,11 @@ const App = {
     };
   },
 
+  //TODO!!
   postPublicKeyOnContract: async function (address, publicKey) {
+    var spinner = this.showSpinner();
     await agContract.methods.setPublicKey(address, publicKey).send({
-      from: await this.callOwner(),
+      from: address,
       gas: '2500000',
       value: 0
     })
@@ -193,8 +196,8 @@ const App = {
         })
         .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
           console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
-          spinner.stop(); // loading ui 종료
           alert("컨트랙에 공개키 (" + HostPublicKey + ")를 저장했습니다."); // 입력된 host 정보
+          spinner.stop();
           location.reload();
         })
         .once('error', (error) => { // error가 발생한 경우
@@ -214,7 +217,8 @@ const App = {
           return;
         } //검증통과
 
-        const IDCard = JSON.parse(event.target.result);
+        const importFile = event.target.result;
+        const IDCard = JSON.parse(importFile);
 
         this.user.userType = IDCard.UserType;
         if (this.user.userType === 'Host' || this.user.userType === 'Verifier') {
@@ -222,17 +226,29 @@ const App = {
           if (IDCard.Cipher === '' || IDCard.IssuerSign === '') {
             $('#message').text('아직 발급되지 않은 ID Card 입니다. 기관에서 발급 후에 사용해주세요.');
           } else if (IDCard.UserSign === '') {
-            $('#loginModal').modal('hide');
             alert("최초 로그인입니다! 자동으로 서명을 진행합니다. 서명 후에 다시 로그인 해 주세요.");
-            const keypair = this.issueUserKeypair();
+            $('#loginModal').modal('hide');
 
-            const cipher = RSA.encryptData(keypair.privateKey, IDCard.cipher);
+            const keypair = this.issueUserKeypair();
+            console.log(keypair);
+            console.log(IDCard);
+            const cipherWithUsers = RSA.encryptData(keypair.privateKey, IDCard.Cipher);
+
             // TODO: fs로 업데이트 진행 - cipher 그대로 업데이트 하면 됨.
             // cipher update
+            const newIDCard = {
+              UserType: IDCard.UserType,
+              Cipher: cipherWithUsers,
+              Keystore: IDCard.Keystore,
+              IssuerSign: IDCard.IssuerSign,
+              UserSign: RSA.sign(keypair.privateKey, cipherWithUsers) //TODO: data부분 확인
+            }
 
-            this.fileDownload(JSON.stringify(keypair.privateKey, null, 8), "PrivateKey-" + IDCard.keystore.address, "application/json"); // 최초의 IDCard
-            await this.postPublicKeyOnContract(IDCard.keystore.address, keypair.publicKey);
-            location.reload();
+            await this.fileDownload(JSON.stringify(newIDCard, null, 8), "IDCard-" + "-Usable", "application/json");
+            await this.fileDownload(JSON.stringify(keypair.privateKey, null, 8), "PrivateKey-" + IDCard.Keystore.address, "application/json"); // 최초의 IDCard
+
+            await this.postPublicKeyOnContract(IDCard.Keystore.address, keypair.publicKey);
+            // location.reload();
           } else {
             this.auth.keystore = keystore;
             this.auth.address = keystore.address;
@@ -292,8 +308,7 @@ const App = {
    */
   exportUserData: async function () {
 
-    var spinner = this.showSpinner();
-    const privateKey = this.auth.keystore;
+    const privateKey = this.auth.privateKey;
     this.setUserData();
 
 
@@ -305,12 +320,13 @@ const App = {
     }
 
     const cipher = RSA.encryptData(privateKey, userData);
+    const issuerSign = RSA.sign(privateKey, userData);
 
     const IDCard = {
       UserType: this.user.userType,
       Cipher: cipher,
-      Keystore: userKeystore,
-      IssuerSign: '',
+      Keystore: this.auth.keystore,
+      IssuerSign: issuerSign,
       UserSign: '',
     };
 
@@ -318,16 +334,21 @@ const App = {
     await this.fileDownload(JSON.stringify(IDCard, null, 8), "IDCard-" + this.user.name, "application/json");
 
     $('#privateKeyModal').modal('hide');
+    alert("신분증이 발급되었습니다!!");
+    location.reload();
   },
+
 
   handleIDCardLogin: async function () {
     if (this.auth.accessType === 'keystore') {
       try{ //caver instance 활용
         //키스토어와 비밀번호로 비밀키(privateKey)를 가져옴
         const privateKey = cav.klay.accounts.decrypt(this.auth.keystore, this.auth.password).privateKey;
-        location.reload();
+        $('#IDCardModal').modal('hide');
+        $('#Button_Issuer_Bring_IDCard').hide();
+        $('#Text_User_Address').show().append('유저 주소: ' + this.auth.keystore.address);
       } catch (e) {
-        $('#message').text('비밀번호가 일치하지 않습니다.');
+        $('#IDCard_message').text('비밀번호가 일치하지 않습니다.');
       }
     }
   },
@@ -449,7 +470,7 @@ const App = {
           $('#privateKey_message').text('유효하지 않은 privateKey 파일입니다.');
           return;
         } //검증통과
-        this.auth.keystore = event.target.result; // TODO 변수 설정 필요!!(전역 X)
+        this.auth.privateKey = event.target.result; // TODO 변수 설정 필요!!(전역 X)
         $('#privateKey_message').text('private 통과. 확인을 누르면 User Data File이 출력됩니다.');
       } catch (event) {
         $('#privateKey_message').text('유효하지 않은 privateKey 파일입니다.');
@@ -465,10 +486,11 @@ const App = {
    * @param userDataFile
    * @returns {string}
    */
-  checkValidUserData: function (userDataFile) {
-    const parseUserData = JSON.parse(userDataFile);
-    return parseUserData.UserType &&
-        parseUserData.cipher;
+  checkValidIDCard: function (userDataFile) {
+    const parseIDCard = JSON.parse(userDataFile);
+    const isIDCard = parseIDCard.UserType &&
+                     parseIDCard.Keystore;
+    return isIDCard;
   },
 
   /**
@@ -480,22 +502,23 @@ const App = {
     userData.readAsText(event.target.files[0]); //file 선택
     userData.onload = (event) => { // 선택 후 확인
       try{
-        if (!this.checkValidUserData(event.target.result)){ // 올바른 파일인지 확인
-          $('#privateKey_message').text('유효하지 않은 userData 파일입니다.');
+        if (!this.checkValidIDCard(event.target.result)){ // 올바른 파일인지 확인
+          $('#IDCard_message').text('유효하지 않은 IDCard 파일입니다.');
 
         } else { //검증통과
-          const IDCard = JSON(event.target.result);
-          if (IDCard.cipher !== '') {
-            this.user.userType = IDCard.userType;
-            this.auth.keystore = IDCard.keystore;
-            this.cipherHostData = IDCard.cipher;
-            $('#decrypt_message').text('userData 통과. ');
+          const IDCard = JSON.parse(event.target.result);
+          if (IDCard.Cipher === '') {
+            this.user.userType = IDCard.UserType;
+            this.auth.keystore = IDCard.Keystore;
+            // this.cipherHostData = IDCard.Cipher;
+            $('#IDCard_message').text('올바른 IDCard 입니다.');
           } else {
-            alert("이미 입력된 IDCard입니다. IDCard를 확인하세요.");
+            alert("이미 발급된 IDCard입니다. IDCard를 확인하세요.");
           }
         }
-      } catch (event) {
-        $('#decrypt_message').text('유효하지 않은 userData 파일입니다.');
+      } catch (e) {
+        console.log(e);
+        $('#decrypt_message').text('유효하지 않은 IDCard 입니다.');
       }
     }
   },

@@ -179,10 +179,15 @@
       Verifier
     </button>
   </p>
-  <button type="button" class="btn btn-info pull-left" id="Button_Issuer_Bring_IDCard" style="display: none;"
-          data-toggle="modal" data-target="#IDCardModal">
-    IDCard 입력하기
-  </button><br><br>
+  <p>
+    <button type="button" class="btn btn-info pull-left" id="Button_Issuer_Bring_IDCard" style="display: none;"
+            data-toggle="modal" data-target="#IDCardModal">
+      IDCard 입력하기
+    </button>
+  </p>
+
+  <div class="text-left" id="Text_User_Address" style="display: none;"></div>
+  <br><br>
   <form id=host_data_input style="display: none">
     <!--키스토어 필요-->
     <p>이름: <input type="text" id="host_name"></p>
@@ -250,7 +255,7 @@
         <div class="form-group">
           <label for="keystore">ID Card</label>
           <input type="file" id="IDCard"
-                 onchange="App.userDataImport();">
+                   onchange="App.userDataImport();">
         </div>
         <div class="form-group">
           <label for="input-password">비밀번호</label>
