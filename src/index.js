@@ -591,13 +591,15 @@ const App = {
    * @returns {Promise<void>}
    */
   decryptUserData: async function () {
-    const ipk = await agContract.methods.getIssuerPublicKey().call();
-    const hpk = await agContract.methods.getPublicKey(this.auth.address).call();
-    const d1 = RSA.decryptData(hpk, this.cipherHostData);
-    alert('다음 공개키로 host의 서명확인:'+'\n'+hpk);
-    const d2 = RSA.decryptData(ipk, d1);
-    alert('다음 공개키로 issuer의 서명확인:'+'\n'+ipk);
-    alert(d2);
+    const issuerPublicKey = await agContract.methods.getIssuerPublicKey().call();
+    const hostPublicKey = await agContract.methods.getPublicKey(this.auth.address).call();
+    const hostDecryptedData = RSA.decryptData(hostPublicKey, this.cipherHostData);
+    console.log(hostPublicKey);
+    console.log(RSA.verify(hostPublicKey, this.cipherHostData, this.IDCard.UserSign))
+    alert('다음 공개키로 host의 서명확인:'+'\n'+hostPublicKey);
+    const userDecryptedData = RSA.decryptData(issuerPublicKey, hostDecryptedData);
+    alert('다음 공개키로 issuer의 서명확인:'+'\n'+issuerPublicKey);
+    alert(userDecryptedData);
     $('#decryptModal').modal('hide');
     location.reload();
   },
