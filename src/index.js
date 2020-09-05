@@ -39,8 +39,16 @@ const App = {
     phone: ''
   },
 
+  IDCard: {
+    UserType: '',
+    Cipher: '',
+    Keystore: '',
+    IssuerSign: '',
+    UserSign: ''
+  },
+
   cipherHostData: '',
-  IDCard: '',
+
   /**
    * Start에서 변경할때 꼭 확인
    */
@@ -91,10 +99,12 @@ const App = {
     $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
   },
 
-
-
+  /**
+   * << UI >>
+   * user 관련 UI
+   * @returns {Promise<void>}
+   */
   userUI: async function () {
-
     $('#host_session_out').show(); //TODO: 임시로 만들어놓음
     $('#tooltip').show(); //TODO: 임시로 만들어놓음
     $('#HostPublicKey').append("Host 공개키 : " + await agContract.methods.getPublicKey(this.auth.address).call()); //TODO: 공개키 보여줄 필요 없음
@@ -149,31 +159,44 @@ const App = {
     $('#container_host_function').show();
   },
 
+  /**
+   * << 미구현 >>
+   */
   verifierUI: function () {
 
   },
 
+  /**
+   * << 회원가입 - 호스트 >>
+   * 호스트 로그인시 비밀번호 입력 및 확인 후
+   * 비밀번호 일치하면 가장 기본적인 IDCard 발급
+   * 해당 아이디카드로 로그인 불가 - 이슈어를 통해 정식 신분증 발급 받은 후에 사용 할 수 있음
+   */
   hostSignIn: function () {
     if ( (document.getElementById("host_password").value === document.getElementById("host_password_check").value) &&
           document.getElementById("host_password").value !== '') {
       this.user.password = document.getElementById("host_password").value;
       const account = cav.klay.accounts.create();
       const userKeystore = cav.klay.accounts.encrypt(account.privateKey, this.user.password.toString());
-      const IDCard = {
+      this.IDCard = {
         UserType: this.user.userType,
         Cipher: '',
         Keystore: userKeystore,
         IssuerSign: '',
         UserSign: '',
       };
-      this.fileDownload(JSON.stringify(IDCard, null, 8), "IDCard", "application/json"); // 최초의 IDCard
+      this.fileDownload(JSON.stringify(this.IDCard, null, 8), "IDCard", "application/json"); // 최초의 IDCard
       location.reload();
     } else {
       alert("비밀번호를 다시 확인해주세요!");
     }
   },
 
-  issueUserKeypair: function () {
+  /**
+   * << 보안 - 키페어 발급 >>
+   * @returns {{privateKey: *, publicKey: *}}
+   */
+  issueKeypair: function () {
     RSA.getKey();
     const privateKey = RSA.getPrivateKey();
     const publicKey = RSA.getPublicKey();
@@ -183,7 +206,12 @@ const App = {
     };
   },
 
-  //TODO!!
+  /**
+   * << 컨트랙트 >>
+   * 공개키를 주소에 맞추어 저장 - mapping을 통해 저장함
+   * @param address : 공개키와 함께 등록할 주소
+   * @param publicKey : 등록하고자 하는 공개키
+   */
   postPublicKeyOnContract: async function (address, publicKey) {
     var spinner = this.showSpinner();
     await agContract.methods.setPublicKey(address, publicKey).send({
@@ -196,7 +224,7 @@ const App = {
         })
         .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
           console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
-          alert("컨트랙에 공개키 (" + HostPublicKey + ")를 저장했습니다."); // 입력된 host 정보
+          alert("컨트랙에 공개키 (" + publicKey + ")를 저장했습니다."); // 입력된 host 정보
           spinner.stop();
           location.reload();
         })
@@ -205,6 +233,11 @@ const App = {
         });
   },
 
+  /**
+   * << IDCard 입력 >>
+   * 유저가 아이디카드를 입력했을 때 상황에 맞춰 출력
+   * 입력한 IDCard는 this.IDCard로 저장하게 됨.
+   */
   handleUserImport: async function () {
     const fileReader = new FileReader();
     fileReader.readAsText(event.target.files[0]); //file 선택
@@ -218,37 +251,14 @@ const App = {
         } //검증통과
 
         const importFile = event.target.result;
-        const IDCard = JSON.parse(importFile);
+        this.IDCard = JSON.parse(importFile);
 
-        this.user.userType = IDCard.UserType;
+        this.user.userType = this.IDCard.UserType;
         if (this.user.userType === 'Host' || this.user.userType === 'Verifier') {
-          keystore = IDCard.Keystore;
-          if (IDCard.Cipher === '' || IDCard.IssuerSign === '') {
-            $('#message').text('아직 발급되지 않은 ID Card 입니다. 기관에서 발급 후에 사용해주세요.');
-          } else if (IDCard.UserSign === '') {
-            alert("최초 로그인입니다! 자동으로 서명을 진행합니다. 서명 후에 다시 로그인 해 주세요.");
+          keystore = this.IDCard.Keystore;
+          if (this.IDCard.Cipher === '' || this.IDCard.IssuerSign === '') {
+            alert('아직 발급되지 않은 ID Card 입니다. 기관에서 발급 후에 사용해주세요.')
             $('#loginModal').modal('hide');
-
-            const keypair = this.issueUserKeypair();
-            console.log(keypair);
-            console.log(IDCard);
-            const cipherWithUsers = RSA.encryptData(keypair.privateKey, IDCard.Cipher);
-
-            // TODO: fs로 업데이트 진행 - cipher 그대로 업데이트 하면 됨.
-            // cipher update
-            const newIDCard = {
-              UserType: IDCard.UserType,
-              Cipher: cipherWithUsers,
-              Keystore: IDCard.Keystore,
-              IssuerSign: IDCard.IssuerSign,
-              UserSign: RSA.sign(keypair.privateKey, cipherWithUsers) //TODO: data부분 확인
-            }
-
-            await this.fileDownload(JSON.stringify(newIDCard, null, 8), "IDCard-" + "-Usable", "application/json");
-            await this.fileDownload(JSON.stringify(keypair.privateKey, null, 8), "PrivateKey-" + IDCard.Keystore.address, "application/json"); // 최초의 IDCard
-
-            await this.postPublicKeyOnContract(IDCard.Keystore.address, keypair.publicKey);
-            // location.reload();
           } else {
             this.auth.keystore = keystore;
             this.auth.address = keystore.address;
@@ -267,6 +277,13 @@ const App = {
   },
 
 
+  /**
+   * << DATA >>
+   * User가 자신의 Data를 전달한 경우
+   * HTML에서 데이터 불러와 각각에 저장
+   * this.user에 저장하게 됨
+   * 필요한 경우 추가 가능
+   */
   setUserData: function () {
     if (this.user.userType === 'Host') {
       this.user.password = document.getElementById("host_password").value;
@@ -305,13 +322,13 @@ const App = {
   /**
    * << UserData - file export >>
    * user가 입력한 data를 파일로 출력
+   * 이때 발급하는 사용자에게 0.1클레이 전송으로 이후 사용자 공개키를
+   * 성공적으로 컨트랙에 올릴 수 있게 함
    */
   exportUserData: async function () {
 
     const privateKey = this.auth.privateKey;
     this.setUserData();
-
-
 
     const userData = {
       name: this.user.name,
@@ -330,8 +347,14 @@ const App = {
       UserSign: '',
     };
 
-
     await this.fileDownload(JSON.stringify(IDCard, null, 8), "IDCard-" + this.user.name, "application/json");
+
+    cav.klay.sendTransaction({
+      from: await this.callOwner(),
+      to: this.auth.keystore.address,
+      value: '100000000000000000',
+      gas: '2500000'
+    })
 
     $('#privateKeyModal').modal('hide');
     alert("신분증이 발급되었습니다!!");
@@ -339,7 +362,11 @@ const App = {
   },
 
 
-  handleIDCardLogin: async function () {
+  /**
+   *  << Confirm IDCard >>
+   *  아이디카드를 등록하는 경우 사용
+   */
+  handleIDCard: async function () {
     if (this.auth.accessType === 'keystore') {
       try{ //caver instance 활용
         //키스토어와 비밀번호로 비밀키(privateKey)를 가져옴
@@ -605,7 +632,31 @@ const App = {
         //키스토어와 비밀번호로 비밀키(privateKey)를 가져옴
         const privateKey = cav.klay.accounts.decrypt(this.auth.keystore, this.auth.password).privateKey;
         this.integrateWallet(privateKey);
+        if (this.user.userType !== 'Issuer') {
+          const keypair = this.issueKeypair();
+          const cipherWithUsers = RSA.encryptData(keypair.privateKey, this.IDCard.Cipher);
+
+          // TODO: fs로 업데이트 진행 - cipher 그대로 업데이트 하면 됨.
+          // cipher update
+          const newIDCard = {
+            UserType: this.IDCard.UserType,
+            Cipher: cipherWithUsers,
+            Keystore: this.IDCard.Keystore,
+            IssuerSign: this.IDCard.IssuerSign,
+            UserSign: RSA.sign(keypair.privateKey, cipherWithUsers) //TODO: data부분 확인
+          }
+
+          this.IDCard = newIDCard;
+          sessionStorage.setItem('IDCard', this.IDCard);
+
+          await this.fileDownload(JSON.stringify(this.IDCard, null, 8), "IDCard-" + "-Usable", "application/json");
+          await this.fileDownload(JSON.stringify(keypair.privateKey, null, 8), "PrivateKey-" + this.IDCard.Keystore.address, "application/json"); // 최초의 IDCard
+
+          await this.postPublicKeyOnContract(this.auth.keystore.address, keypair.publicKey);
+        }
+        location.reload();
       } catch (e) {
+        console.log(e);
         $('#message').text('비밀번호가 일치하지 않습니다.');
       }
     }
@@ -681,7 +732,7 @@ const App = {
     cav.klay.accounts.wallet.add(walletInstance); // caver instance를 통해 계정 정보를 쉽게 가져올 수 있음
 
     sessionStorage.setItem('walletInstance', JSON.stringify(walletInstance));
-    location.reload();
+    // location.reload();
   },
 
   /**
