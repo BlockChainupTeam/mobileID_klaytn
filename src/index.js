@@ -118,10 +118,17 @@ const App = {
   },
 
   /**
-   * TODO: QR코드 생성
+   * << QR코드 >>
+   * writer: 문준영
+   * Host가 Cipher가지고 QR코드 생성하는 부분
    */
   sendIDCard: function () {
-    //ID Card로부터 QR코드 생성
+    this.cipherHostData=sessionStorage.getItem('Cipher'); //세션스토리지에 저장한 cipher를 가져옴
+    var QRCode = require('qrcode')
+    $("#qrcode-content").empty(); //qr코드 content내부값을 모두 삭제
+    QRCode.toDataURL(this.cipherHostData, function (err, url) {
+      $('#qrcode-content').append('<img src="' + url + '" width="400" height="400"/> ');
+    })
   },
 
   /**
@@ -163,7 +170,7 @@ const App = {
    * << 미구현 >>
    */
   verifierUI: function () {
-
+    $('#container_verifier_function').show();
   },
 
   /**
@@ -191,6 +198,33 @@ const App = {
       alert("비밀번호를 다시 확인해주세요!");
     }
   },
+
+  /**
+   * << Verifier >>
+   * verifier 가입부분
+   */
+  verifierSignIn: function(){
+    if ( (document.getElementById("verifier_password").value === document.getElementById("verifier_password_check").value) &&
+        document.getElementById("verifier_password").value !== '') {
+      this.user.password = document.getElementById("verifier_password").value;
+      const account = cav.klay.accounts.create();
+      const userKeystore = cav.klay.accounts.encrypt(account.privateKey, this.user.password.toString());
+      const IDCard = {
+        UserType: this.user.userType,
+        Cipher: '',
+        Keystore: userKeystore,
+        IssuerSign: '',
+        UserSign: '',
+      };
+      this.fileDownload(JSON.stringify(IDCard, null, 8), "VerifierIDCard", "application/json"); // 최초의 IDCard
+      location.reload();
+    } else {
+      alert("비밀번호를 다시 확인해주세요!");
+    }
+
+  },
+
+
 
   /**
    * << 보안 - 키페어 발급 >>
@@ -263,6 +297,7 @@ const App = {
             this.auth.keystore = keystore;
             this.auth.address = keystore.address;
             sessionStorage.setItem('UserType', this.user.userType);
+            sessionStorage.setItem('Cipher',IDCard.Cipher);
             $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
             document.querySelector('#input-password').focus();
           }
@@ -632,7 +667,7 @@ const App = {
         //키스토어와 비밀번호로 비밀키(privateKey)를 가져옴
         const privateKey = cav.klay.accounts.decrypt(this.auth.keystore, this.auth.password).privateKey;
         this.integrateWallet(privateKey);
-        if (this.user.userType !== 'Issuer') {
+        if (this.user.userType !== 'Issuer' && this.IDCard.UserSign === '') {
           const keypair = this.issueKeypair();
           const cipherWithUsers = RSA.encryptData(keypair.privateKey, this.IDCard.Cipher);
 
@@ -788,6 +823,30 @@ const App = {
   },
 
   /**
+   * << QR코드 >>
+   * host가 넘겨준 QR코드 이미지 파일을 Verifier가 불러오는 함수
+   */
+  userQRCodeImport: function(){
+
+    const png =require('png.js')
+    const jsQR = require('jsqr');
+
+    const fileReader = new FileReader();
+
+    fileReader.readAsArrayBuffer(event.target.files[0]);
+
+    fileReader.onload = (event) => { // 선택 후 확인
+      const pngReader = new png(event.target.result);
+      pngReader.parse(function(err, pngData) {
+        if (err) throw alert("png파일 형태의 QR코드이미지 파일을 넣어주세요!");
+        const pixelArray = convertPNGtoByteArray(pngData);
+        console.log(jsQR(pixelArray, pngData.width, pngData.height));
+      });
+    }
+
+  },
+
+  /**
    * << 파일 다운로드 >>
    * download Session
    * @param data
@@ -821,6 +880,28 @@ window.App = App;
 window.addEventListener("load", function () {
   App.start();
 });
+
+/**
+ * << QR코드 >>
+ * QR코드 이미지 파일 변환해 주는 함수
+ * @param pngData : QR코드 이미지 파일 입력
+ * @returns {Uint8ClampedArray} : User Data코드 return
+ */
+function convertPNGtoByteArray(pngData) {
+  const data = new Uint8ClampedArray(pngData.width * pngData.height * 4);
+  for (let y = 0; y < pngData.height; y++) {
+    for (let x = 0; x < pngData.width; x++) {
+      const pixelData = pngData.getPixel(x, y);
+
+      data[(y * pngData.width + x) * 4 + 0] = pixelData[0];
+      data[(y * pngData.width + x) * 4 + 1] = pixelData[1];
+      data[(y * pngData.width + x) * 4 + 2] = pixelData[2];
+      data[(y * pngData.width + x) * 4 + 3] = pixelData[3];
+    }
+  }
+  return data;
+}
+
 
 var opts = {
   lines: 10, // The number of lines to draw

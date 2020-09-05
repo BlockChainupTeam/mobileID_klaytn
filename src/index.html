@@ -101,7 +101,9 @@
   <div class="text-center" id="send_IDCard">
     <button type="button"
             class="btn btn-info pull-left"
-            id="BUtton_host_send_idCard"
+            id="Button_host_send_idCard"
+            data-toggle="modal"
+            data-target="#qrcode-modal"
             onclick="App.sendIDCard()">
       IDCard 전달하기 - QR코드 생성
     </button>
@@ -114,15 +116,36 @@
       IDCard 삭제하기
     </button>
   </div>
-  <div class="text-center" id="check_records">
+  <div class="text-center" id="check_host_records">
     <button type="button"
             class="btn btn-info pull-left"
-            id="BUtton_host_check_records"
+            id="BUtton_host_check_logs"
             onclick="App.checkRecords()">
       기록 확인하기
     </button>
   </div>
 </div>
+
+<div class="container" id="container_verifier_function" style="display: none;">
+  <div class="text-center" id="scan_IDCard">
+    <button type="button"
+            class="btn btn-info pull-left"
+            id="button-host-IDCard-scan"
+            data-toggle="modal"
+            data-target="#idcard-scan-container">
+      IDCard 스캔
+    </button>
+  </div>
+  <div class="text-center" id="check_verifier_logs">
+    <button type="button"
+            class="btn btn-info pull-left"
+            id="Button_host_check_records"
+            onclick="App.checkRecords()">
+      기록확인하기
+    </button>
+  </div>
+</div>
+
 
 <div class="container" id="print_user_records"></div>
 
@@ -134,6 +157,16 @@
     <p>비밀번호 확인: <input type="text" id="host_password_check"></p>
     <button type="button" class="btn btn-info pull-left" id="Button_host_SignIn_Confirm"
             onclick="App.hostSignIn()">확인
+    </button>
+  </form>
+</div>
+
+<div class="container">
+  <form id=verifier_SignIn_Password style="display: none">
+    <p>사용할 비밀번호: <input type="text" id="verifier_password"></p>
+    <p>비밀번호 확인: <input type="text" id="verifier_password_check"></p>
+    <button type="button" class="btn btn-info pull-left" id="Button_verifier_SignIn_Confirm"
+            onclick="App.verifierSignIn()">확인
     </button>
   </form>
 </div>
@@ -314,6 +347,47 @@
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
+
+<!-- qr코드용 모달  추가-->
+<div class="modal fade" tabindex="-1" role="dialog" id="qrcode-modal"  >
+  <div class="modal-dialog modal-sm" style="max-width: 100%; width: auto; display: table;">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="form-group">
+          <h3 style="text-align: center;">QR코드 </h3>
+        </div>
+        <div class="form-group">
+          <div id="qrcode-content"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<!-- idcard 스캔 모달 --->
+<div class="modal fade" tabindex="-1" role="dialog" id="idcard-scan-container">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="idcard">User QRCode file</label>
+          <input type="file" id="input_idcard-scan_modal" onchange="App.userQRCodeImport()">
+        </div>
+        <div class="form-group">
+          <p class="help-block" id="scan_message"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+        <button type="button" class="btn btn-primary" id="scan_submit" onclick="App.decryptUserData()">제출</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
 
 
 </div>
