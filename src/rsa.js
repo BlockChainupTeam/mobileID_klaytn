@@ -41,9 +41,4 @@ RSA.sign = function (privateKey, userData) {
     return key.sign(userData, 'hex', 'utf8');
 }
 
-RSA.verify = function (publicKey, userData, signature) {
-    key = new NodeRSA(publicKey, 'pkcs8-public-pem');
-    return key.verify(userData, signature, 'utf8', 'hex');
-}
-
 module.exports = RSA;

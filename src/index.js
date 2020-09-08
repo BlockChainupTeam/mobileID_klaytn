@@ -36,7 +36,8 @@ const App = {
     userType: '',
     name: '',
     id_number: '',
-    phone: ''
+    phone: '',
+    qrcode:''
   },
 
   IDCard: {
@@ -48,6 +49,7 @@ const App = {
   },
 
   cipherHostData: '',
+
 
   /**
    * Start에서 변경할때 꼭 확인
@@ -122,13 +124,36 @@ const App = {
    * writer: 문준영
    * Host가 Cipher가지고 QR코드 생성하는 부분
    */
-  sendIDCard: function () {
+
+  sendIDCard:  function () {
     this.cipherHostData=sessionStorage.getItem('Cipher'); //세션스토리지에 저장한 cipher를 가져옴
+
+    let tmp;
     var QRCode = require('qrcode')
-    $("#qrcode-content").empty(); //qr코드 content내부값을 모두 삭제
-    QRCode.toDataURL(this.cipherHostData, function (err, url) {
+    $("#qrcode-content").empty(); //qr코드 content내부값을 모두 삭제  (삭제안하면 모달안에 계속 추가됨)
+
+    const hostdata={
+      cipherHostData:this.cipherHostData,
+      address:this.auth.address
+    }
+    //Host cipherData와 해당 host address를 객체로만들어서 QR코드로 생성
+    const JSONhostdata=JSON.stringify(hostdata)
+ 
+    QRCode.toDataURL(JSONhostdata, function (err, url) {
       $('#qrcode-content').append('<img src="' + url + '" width="400" height="400"/> ');
+      tmp=url;
     })
+    this.user.qrcode=tmp;
+  },
+
+
+  //QR코드 이미지 다운로드 함수 
+  hostQrCodeDownload: async function() {
+    var link = document.createElement("a");
+    link.setAttribute("href", this.user.qrcode);
+    link.setAttribute("download", "HostQRcode");
+    link.click();
+    alert("QR코드 이미지 파일이 다운로드가 완료되었습니다 ")
   },
 
   /**
@@ -217,6 +242,7 @@ const App = {
         UserSign: '',
       };
       this.fileDownload(JSON.stringify(IDCard, null, 8), "VerifierIDCard", "application/json"); // 최초의 IDCard
+      alert("Verifier IDCard가 발급되었습니다.")
       location.reload();
     } else {
       alert("비밀번호를 다시 확인해주세요!");
@@ -284,10 +310,11 @@ const App = {
           return;
         } //검증통과
 
-        const importFile = event.target.result;
-        this.IDCard = JSON.parse(importFile);
 
+        const IDCard = JSON.parse(event.target.result);
+        this.IDCard=IDCard;
         this.user.userType = this.IDCard.UserType;
+
         if (this.user.userType === 'Host' || this.user.userType === 'Verifier') {
           keystore = this.IDCard.Keystore;
           if (this.IDCard.Cipher === '' || this.IDCard.IssuerSign === '') {
@@ -298,13 +325,13 @@ const App = {
             this.auth.address = keystore.address;
             sessionStorage.setItem('UserType', this.user.userType);
             sessionStorage.setItem('Cipher',IDCard.Cipher);
+            
             $('#message').text('keysore 통과. 비밀번호를 입력하세요.');
             document.querySelector('#input-password').focus();
           }
         } else {
           $('#message').text('올바르지 않은 유저 타입입니다.');
         }
-
       } catch (event) {
         $('#message').text('유효하지 않은 keystore 파일입니다.');
       }
@@ -392,7 +419,7 @@ const App = {
     })
 
     $('#privateKeyModal').modal('hide');
-    alert("신분증이 발급되었습니다!!");
+    alert("증이 발급되었습니다!!");
     location.reload();
   },
 
@@ -591,17 +618,23 @@ const App = {
    * @returns {Promise<void>}
    */
   decryptUserData: async function () {
-    const issuerPublicKey = await agContract.methods.getIssuerPublicKey().call();
-    const hostPublicKey = await agContract.methods.getPublicKey(this.auth.address).call();
-    const hostDecryptedData = RSA.decryptData(hostPublicKey, this.cipherHostData);
-    console.log(hostPublicKey);
-    console.log(RSA.verify(hostPublicKey, this.cipherHostData, this.IDCard.UserSign))
-    alert('다음 공개키로 host의 서명확인:'+'\n'+hostPublicKey);
-    const userDecryptedData = RSA.decryptData(issuerPublicKey, hostDecryptedData);
-    alert('다음 공개키로 issuer의 서명확인:'+'\n'+issuerPublicKey);
-    alert(userDecryptedData);
-    $('#decryptModal').modal('hide');
-    location.reload();
+
+     
+    const HostEncrptyData=JSON.parse(this.cipherHostData);
+     const IssuerPublicKey = await agContract.methods.getIssuerPublicKey().call(); //Issuer public Key 호출
+     const HostPublickey = await agContract.methods.getPublicKey(HostEncrptyData.address).call();     //Host Public key 호출
+
+     const d1 = RSA.decryptData(HostPublickey, HostEncrptyData.cipherHostData); // Host public key로 해독 
+     const d2 = RSA.decryptData(IssuerPublicKey, d1); //issuer publickey 키로 해독
+
+     const HostDecrptyData=JSON.parse(d2);
+     
+     document.querySelector('.host-table-name').innerHTML=HostDecrptyData.name;
+     document.querySelector('.host-table-id_number').innerHTML=HostDecrptyData.id_number;
+     document.querySelector('.host-table-phone').innerHTML=HostDecrptyData.phone;
+     
+     $('.host-info').modal('show');
+    
   },
 
 
@@ -682,6 +715,7 @@ const App = {
             IssuerSign: this.IDCard.IssuerSign,
             UserSign: RSA.sign(keypair.privateKey, cipherWithUsers) //TODO: data부분 확인
           }
+
 
           this.IDCard = newIDCard;
           sessionStorage.setItem('IDCard', this.IDCard);
@@ -828,26 +862,26 @@ const App = {
    * << QR코드 >>
    * host가 넘겨준 QR코드 이미지 파일을 Verifier가 불러오는 함수
    */
-  userQRCodeImport: function(){
+  userQRCodeImport: async function(){
 
     const png =require('png.js')
     const jsQR = require('jsqr');
-
+    let b;
+    
     const fileReader = new FileReader();
-
     fileReader.readAsArrayBuffer(event.target.files[0]);
-
+    
     fileReader.onload = (event) => { // 선택 후 확인
       const pngReader = new png(event.target.result);
       pngReader.parse(function(err, pngData) {
         if (err) throw alert("png파일 형태의 QR코드이미지 파일을 넣어주세요!");
         const pixelArray = convertPNGtoByteArray(pngData);
-        console.log(jsQR(pixelArray, pngData.width, pngData.height));
-      });
-    }
-
+        b=jsQR(pixelArray, pngData.width, pngData.height).data; 
+        setCipherHost(b); //새로추가 전역함수를 이용하여 해당값을 객체에넣음
+       });
+     }
+   
   },
-
   /**
    * << 파일 다운로드 >>
    * download Session
@@ -902,6 +936,13 @@ function convertPNGtoByteArray(pngData) {
     }
   }
   return data;
+}
+
+
+
+//  문준영 추가 Cipher Hostdata 설정 전역함수로 뺴서 객체내 속성값 저장 
+function setCipherHost(data){
+App.cipherHostData=data;
 }
 
 
