@@ -389,6 +389,7 @@ const App = {
    */
   exportUserData: async function () {
 
+    var spinner = this.showSpinner();
     const privateKey = this.auth.privateKey;
     this.setUserData();
 
@@ -410,17 +411,30 @@ const App = {
     };
 
     await this.fileDownload(JSON.stringify(IDCard, null, 8), "IDCard-" + this.user.name, "application/json");
-
+    alert(this.auth.keystore.address);
+    
     cav.klay.sendTransaction({
-      from: await this.callOwner(),
-      to: this.auth.keystore.address,
-      value: '100000000000000000',
-      gas: '2500000'
-    })
+    from: await this.callOwner(),
+    to: this.auth.keystore.address,
+    value: '100000000000000000',
+    gas: '2500000'
+}).once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
+          console.log(`txHash: ${txHash}`);
+        })
+        .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
+          console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
+          spinner.stop(); // loading ui 종료
+          alert(this.auth.keystore.address+"에게 100000000000000000peb (0.1Klay) 송급");
+          $('#privateKeyModal').modal('hide');
+    	  alert("증이 발급되었습니다!!");
+          location.reload();
+          //서명시 적당량 송금해주는 방식 -- 가스비 위임 트랜잭션 고려해봐야함
+        })
+        .once('error', (error) => { // error가 발생한 경우
+          alert(error.message);
+        });
 
-    $('#privateKeyModal').modal('hide');
-    alert("증이 발급되었습니다!!");
-    location.reload();
+
   },
 
 
