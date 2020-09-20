@@ -959,6 +959,7 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
   var outputMessage = document.getElementById("outputMessage");
   var outputData = document.getElementById("outputData");
 
+  let tmpstream;
 
 
   function drawLine(begin, end, color) {
@@ -971,7 +972,6 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
   }
 
 
-
   // 카메라 사용시
 	navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
       video.srcObject = stream;
@@ -979,26 +979,8 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
       video.play();
       requestAnimationFrame(tick);
 
-
-
-      //QR코드스캔후 출력버튼을 눌렀을떄
-      document.querySelector('#host-info-btn').addEventListener('click', async function () {
-        const HostInfo=await App.decryptUserData()
-        if(HostInfo){
-        stream.getTracks().forEach(function(track) {
-          if (track.readyState == 'live' && track.kind === 'video') {
-              track.stop();
-          }
-          alert('Host의 정보가 출력되었습니다.')
-          $('#qrcode-scan-container').modal('hide');
-          $('#verifier_host_data').show();
-        });
-      }
-      else{
-        alert('올바르지 않은 QR코드 입니다!')
-      }
-      })
-
+       tmpstream=stream
+         
       // QR코드 스캔 모달에서 닫기버튼 누를때 카메라끄기
       document.querySelector('#host-info-btn2').addEventListener('click', function () {
         stream.getTracks().forEach(function(track) {
@@ -1010,7 +992,7 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
 });
 
 
-  function tick() {
+  async function tick() {
     loadingMessage.innerText = "⌛ 스캔 기능을 활성화 중입니다."
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
       loadingMessage.hidden = true;
@@ -1039,11 +1021,22 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
         drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner, "#FF0000");
         drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF0000");
 
-        outputMessage.hidden = true;
-        outputData.parentElement.hidden = false;
-        outputData.innerHTML = code.data;
         setCipherHost(code.data)
+
+        const HostInfo=await App.decryptUserData()
+        if(HostInfo){
         alert('스캔완료!')
+        tmpstream.getTracks().forEach(function(track) {
+          if (track.readyState == 'live' && track.kind === 'video') {
+              track.stop();
+          }
+          $('#qrcode-scan-container').modal('hide');
+         $('#verifier_host_data').show();
+         });  
+        }
+        else{
+          alert('스캔실패!')   
+        }
       }
 
       else {
