@@ -10,7 +10,6 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
           integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
           crossorigin="anonymous"></script>
-  <script src="index.js"></script>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
         integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 </head>
@@ -165,7 +164,8 @@
             class="btn btn-info pull-left"
             id="button-host-IDCard-scan"
             data-toggle="modal"
-            data-target="#qrcode-scan-container">
+            data-target="#qrcode-scan-container"
+            >
       IDCard 스캔
     </button>
   </div>
@@ -278,7 +278,32 @@
 
 <!--회원가입 된 경우 Host Data 출력부-->
 <div class="row text-center">
-  <div id="host_data"></div>
+  <div id="host_data">
+
+  </div>
+  
+  <div id="verifier_host_data">
+    <table class="table" style="display: none;">
+      <thead>
+        <tr>
+          <th scope="col">이름</th>
+          <th scope="col">주민등록번호</th>
+          <th scope="col">전화번호</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="host-table-name"></td>
+          <td class="host-table-id_number"></td>
+          <td class="host-table-phone"></td>
+        </tr>
+      </tbody>
+    </table>
+
+
+  </div>
+
+
   <br></br>
   <button type="button" style="display: none;" class="btn btn-info pull-center" id="host_session_out" data-toggle="modal"
           data-target="#decryptModal">- 임시 - 데이터 복호화 확인</button>
@@ -386,31 +411,34 @@
 
 <!--  QR코드 스캔 모달 --->
 <div class="modal fade" tabindex="-1" role="dialog" id="qrcode-scan-container">
-  <div class="modal-dialog modal-sm">
+  <div class="modal-dialog modal-sm" style="max-width: 100%; width: auto; display: table;">
     <div class="modal-content">
       <div class="modal-body">
         <div class="form-group">
-          <label for="idcard">Host QRCode file</label>
-          <input type="file" id="input_idcard-scan_modal" onchange="App.userQRCodeImport()">
+          <div id="test">
+            <h3 style="text-align: center;">모바일신분증 QR코드 스캔 </h3>
+            <div id="output">
+              <div id="outputMessage">
+                QR코드를 카메라에 노출시켜 주세요
+              </div>
+                <div id="outputLayer" hidden>
+                  <span id="outputData"></span>
+                </div>
+            </div>
+          </div>
+          <div>&nbsp;</div>
+          <div>
+            <div id="frame">
+              <div id="loadingMessage">
+                🎥 비디오 스트림에 액세스 할 수 없습니다<br/>웹캠이 활성화되어 있는지 확인하십시오
+              </div>
+              <canvas id="canvas"></canvas>
+            </div>
+          </div>
         </div>
         <div class="host-info" style="display: none">
         <h4 style="text-align: center; ">호스트 정보 </h4>
-        <table class="table">
-          <thead>
-            <tr>
-              <th scope="col">이름</th>
-              <th scope="col">주민등록번호</th>
-              <th scope="col">전화번호</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="host-table-name"></td>
-              <td class="host-table-id_number"></td>
-              <td class="host-table-phone"></td>
-            </tr>
-          </tbody>
-        </table>
+        
         </div>
 
         <div class="form-group">
@@ -418,8 +446,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal" onclick=" $('.host-info').modal('hide');">닫기</button>
-        <button type="button" class="btn btn-primary" onclick="App.decryptUserData()">출력</button>
+        <button type="button" class="btn btn-primary" id="host-info-btn" >출력</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal" id="host-info-btn2">닫기</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
@@ -431,7 +459,7 @@
 </div>
 </body>
 
-
+<script src="index.js"></script>
 </html>
 
 <style>

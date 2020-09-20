@@ -15,6 +15,8 @@ import Caver from "caver-js";
 import {Spinner} from "spin.js";
 import RSA from "./rsa";
 
+const jsQR = require('jsqr');
+
 const config = {
   rpcURL: 'https://api.baobab.klaytn.net:8651'
 }
@@ -632,23 +634,28 @@ const App = {
    * @returns {Promise<void>}
    */
   decryptUserData: async function () {
+    
 
-     
-    const HostEncrptyData=JSON.parse(this.cipherHostData);
+    try {
+      const HostEncrptyData=JSON.parse(this.cipherHostData);
      const IssuerPublicKey = await agContract.methods.getIssuerPublicKey().call(); //Issuer public Key 호출
      const HostPublickey = await agContract.methods.getPublicKey(HostEncrptyData.address).call();     //Host Public key 호출
 
-     const d1 = RSA.decryptData(HostPublickey, HostEncrptyData.cipherHostData); // Host public key로 해독 
-     const d2 = RSA.decryptData(IssuerPublicKey, d1); //issuer publickey 키로 해독
+      const d1 = RSA.decryptData(HostPublickey, HostEncrptyData.cipherHostData); // Host public key로 해독 
+      const d2 = RSA.decryptData(IssuerPublicKey, d1); //issuer publickey 키로 해독
+      const HostDecrptyData=JSON.parse(d2);
 
-     const HostDecrptyData=JSON.parse(d2);
-     
-     document.querySelector('.host-table-name').innerHTML=HostDecrptyData.name;
-     document.querySelector('.host-table-id_number').innerHTML=HostDecrptyData.id_number;
-     document.querySelector('.host-table-phone').innerHTML=HostDecrptyData.phone;
-     
-     $('.host-info').modal('show');
-    
+      const verifier_host_data=document.querySelector('verifier_host_data')
+ 
+     verifier_host_data.querySelector('.host-table-name').innerHTML=HostDecrptyData.name;
+     verifier_host_data.querySelector('.host-table-id_number').innerHTML=HostDecrptyData.id_number;
+     verifier_host_data.querySelector('.host-table-phone').innerHTML=HostDecrptyData.phone;
+      
+    return true;
+    } catch (error) {
+      
+      return false;
+    }
   },
 
 
@@ -871,31 +878,6 @@ const App = {
     var target = document.getElementById("spin");
     return new Spinner(opts).spin(target);
   },
-
-  /**
-   * << QR코드 >>
-   * host가 넘겨준 QR코드 이미지 파일을 Verifier가 불러오는 함수
-   */
-  userQRCodeImport: async function(){
-
-    const png =require('png.js')
-    const jsQR = require('jsqr');
-    let b;
-    
-    const fileReader = new FileReader();
-    fileReader.readAsArrayBuffer(event.target.files[0]);
-    
-    fileReader.onload = (event) => { // 선택 후 확인
-      const pngReader = new png(event.target.result);
-      pngReader.parse(function(err, pngData) {
-        if (err) throw alert("png파일 형태의 QR코드이미지 파일을 넣어주세요!");
-        const pixelArray = convertPNGtoByteArray(pngData);
-        b=jsQR(pixelArray, pngData.width, pngData.height).data; 
-        setCipherHost(b); //새로추가 전역함수를 이용하여 해당값을 객체에넣음
-       });
-     }
-   
-  },
   /**
    * << 파일 다운로드 >>
    * download Session
@@ -931,27 +913,6 @@ window.addEventListener("load", function () {
   App.start();
 });
 
-/**
- * << QR코드 >>
- * QR코드 이미지 파일 변환해 주는 함수
- * @param pngData : QR코드 이미지 파일 입력
- * @returns {Uint8ClampedArray} : User Data코드 return
- */
-function convertPNGtoByteArray(pngData) {
-  const data = new Uint8ClampedArray(pngData.width * pngData.height * 4);
-  for (let y = 0; y < pngData.height; y++) {
-    for (let x = 0; x < pngData.width; x++) {
-      const pixelData = pngData.getPixel(x, y);
-
-      data[(y * pngData.width + x) * 4 + 0] = pixelData[0];
-      data[(y * pngData.width + x) * 4 + 1] = pixelData[1];
-      data[(y * pngData.width + x) * 4 + 2] = pixelData[2];
-      data[(y * pngData.width + x) * 4 + 3] = pixelData[3];
-    }
-  }
-  return data;
-}
-
 
 
 //  문준영 추가 Cipher Hostdata 설정 전역함수로 뺴서 객체내 속성값 저장 
@@ -980,3 +941,120 @@ var opts = {
   shadow: '0 0 1px transparent', // Box-shadow for the lines
   position: 'absolute' // Element positioning
 };
+
+
+
+
+
+
+
+// 문준영 추가 Verifier QR코드 스캔 기능구현
+document.querySelector('#button-host-IDCard-scan').addEventListener('click', function () {
+
+  var video = document.createElement("video");
+  var canvasElement = document.getElementById("canvas");
+  var canvas = canvasElement.getContext("2d");
+  var loadingMessage = document.getElementById("loadingMessage");
+  var outputContainer = document.getElementById("output");
+  var outputMessage = document.getElementById("outputMessage");
+  var outputData = document.getElementById("outputData");
+
+
+
+  function drawLine(begin, end, color) {
+    canvas.beginPath();
+    canvas.moveTo(begin.x, begin.y);
+    canvas.lineTo(end.x, end.y);
+    canvas.lineWidth = 4;
+    canvas.strokeStyle = color;
+    canvas.stroke();
+  }
+
+
+
+  // 카메라 사용시
+	navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
+      video.srcObject = stream;
+      video.setAttribute("playsinline", true);      // iOS 사용시 전체 화면을 사용하지 않음을 전달
+      video.play();
+      requestAnimationFrame(tick);
+
+
+
+      //QR코드스캔후 출력버튼을 눌렀을떄
+      document.querySelector('#host-info-btn').addEventListener('click', async function () {
+        const HostInfo=await App.decryptUserData()
+        if(HostInfo){
+        stream.getTracks().forEach(function(track) {
+          if (track.readyState == 'live' && track.kind === 'video') {
+              track.stop();
+          }
+          alert('Host의 정보가 출력되었습니다.')
+          $('#qrcode-scan-container').modal('hide');
+          $('#verifier_host_data').show();
+        });
+      }
+      else{
+        alert('올바르지 않은 QR코드 입니다!')
+      }
+      })
+
+      // QR코드 스캔 모달에서 닫기버튼 누를때 카메라끄기
+      document.querySelector('#host-info-btn2').addEventListener('click', function () {
+        stream.getTracks().forEach(function(track) {
+          if (track.readyState == 'live' && track.kind === 'video') {
+              track.stop();
+          }
+        });
+      })
+});
+
+
+  function tick() {
+    loadingMessage.innerText = "⌛ 스캔 기능을 활성화 중입니다."
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      loadingMessage.hidden = true;
+      canvasElement.hidden = false;
+      outputContainer.hidden = false;
+      // 읽어들이는 비디오 화면의 크기
+
+      canvasElement.height = video.videoHeight;
+      canvasElement.width = video.videoWidth;
+      canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+      var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+
+
+      var code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "dontInvert",
+      });
+
+
+
+      // QR코드 인식에 성공한 경우
+
+      if (code) {
+        // 인식한 QR코드의 영역을 감싸는 사용자에게 보여지는 테두리 생성
+        drawLine(code.location.topLeftCorner, code.location.topRightCorner, "#FF0000");
+        drawLine(code.location.topRightCorner, code.location.bottomRightCorner, "#FF0000");
+        drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner, "#FF0000");
+        drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF0000");
+
+        outputMessage.hidden = true;
+        outputData.parentElement.hidden = false;
+        outputData.innerHTML = code.data;
+        setCipherHost(code.data)
+        alert('스캔완료!')
+      }
+
+      else {
+        outputMessage.hidden = false;
+        outputData.parentElement.hidden = true;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  
+
+});
+
+
