@@ -3,6 +3,7 @@
 > npm install <br>
 > truffle-config.js에서 PrivateKey 변경 <br>
 > npm run dev //실행
+> npm run build //웹팩 번들링 (/dist 에 index.html,index.js 로 저장)
 
 # 주요 버전
 - node.js: 10.15.3
@@ -31,8 +32,6 @@
 
 
 # TODO
-- 신분증 Form 필요
-- Host-Verifier간 통신 - 각 유저에 대한 transaction 구현
-- Host-Verifier간 통신 - ID Card 전달 방법 논의 필요
-- FrontEnd 구현
+- 미비된 기능 확인 후 정리
+- UI/UX 다듬기
 - CL Algorithm 확인 후 구현
