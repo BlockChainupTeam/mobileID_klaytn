@@ -282,8 +282,8 @@
 
   </div>
   
-  <div id="verifier_host_data">
-    <table class="table" style="display: none;">
+  <div id="verifier_host_data" style="display: none">
+    <table class="table">
       <thead>
         <tr>
           <th scope="col">이름</th>
@@ -293,17 +293,14 @@
       </thead>
       <tbody>
         <tr>
-          <td class="host-table-name"></td>
-          <td class="host-table-id_number"></td>
-          <td class="host-table-phone"></td>
+          <td id="host-table-name">이름</td>
+          <td id="host-table-id_number">주민등록번호</td>
+          <td id="host-table-phone">전화번호</td>
         </tr>
       </tbody>
     </table>
-
-
   </div>
-
-
+  
   <br></br>
   <button type="button" style="display: none;" class="btn btn-info pull-center" id="host_session_out" data-toggle="modal"
           data-target="#decryptModal">- 임시 - 데이터 복호화 확인</button>

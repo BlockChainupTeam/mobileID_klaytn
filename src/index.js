@@ -638,22 +638,15 @@ const App = {
 
     try {
       const HostEncrptyData=JSON.parse(this.cipherHostData);
-     const IssuerPublicKey = await agContract.methods.getIssuerPublicKey().call(); //Issuer public Key 호출
-     const HostPublickey = await agContract.methods.getPublicKey(HostEncrptyData.address).call();     //Host Public key 호출
-
-      const d1 = RSA.decryptData(HostPublickey, HostEncrptyData.cipherHostData); // Host public key로 해독 
-      const d2 = RSA.decryptData(IssuerPublicKey, d1); //issuer publickey 키로 해독
+     const IssuerPublicKey2 = await agContract.methods.getIssuerPublicKey().call(); //Issuer public Key 호출
+     const HostPublickey2 = await agContract.methods.getPublicKey(HostEncrptyData.address).call();     //Host Public key 호출
+      const d1 = RSA.decryptData(HostPublickey2, HostEncrptyData.cipherHostData); // Host public key로 해독 
+      const d2 = RSA.decryptData(IssuerPublicKey2, d1); //issuer publickey 키로 해독
       const HostDecrptyData=JSON.parse(d2);
-
-      const verifier_host_data=document.querySelector('verifier_host_data')
- 
-     verifier_host_data.querySelector('.host-table-name').innerHTML=HostDecrptyData.name;
-     verifier_host_data.querySelector('.host-table-id_number').innerHTML=HostDecrptyData.id_number;
-     verifier_host_data.querySelector('.host-table-phone').innerHTML=HostDecrptyData.phone;
-      
-    return true;
+	  
+    return HostDecrptyData;
     } catch (error) {
-      
+	   alert(error)
       return false;
     }
   },
@@ -1022,16 +1015,18 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
         drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF0000");
 
         setCipherHost(code.data)
-
         const HostInfo=await App.decryptUserData()
         if(HostInfo){
-        alert('스캔완료!')
+         alert("스캔완료!")
+			$('#verifier_host_data').show();
+			$('#host-table-name').text(HostInfo.name);
+			$('#host-table-id_number').text(HostInfo.id_number);
+			$('#host-table-phone').text(HostInfo.phone);
+         $('#qrcode-scan-container').modal('hide');
         tmpstream.getTracks().forEach(function(track) {
           if (track.readyState == 'live' && track.kind === 'video') {
               track.stop();
           }
-          $('#qrcode-scan-container').modal('hide');
-         $('#verifier_host_data').show();
          });  
         }
         else{
