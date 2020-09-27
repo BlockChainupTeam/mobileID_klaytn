@@ -174,17 +174,6 @@ const App = {
   },
 
   /**
-   * TODO: records 출력하면 됨
-   * Button_
-   */
-  checkRecords: function () {
-    const records = agContract.methods.getRecords(this.auth.address).call();
-    for(let i = 0; i<records.length; i++) {
-      $('#print_user_records').append(records[i] + "<br>");
-    }
-  },
-
-  /**
    * 필요기능:
    * IDCard 출력하기 (QR코드 가져오기?)
    * 신분증 삭제하기
@@ -896,6 +885,8 @@ const App = {
       }, 0);
     }
   },
+
+
 };
 
 
@@ -1004,7 +995,6 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
       });
 
 
-
       // QR코드 인식에 성공한 경우
 
       if (code) {
@@ -1017,7 +1007,7 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
         setCipherHost(code.data)
         const HostInfo=await App.decryptUserData()
         if(HostInfo){
-         alert("스캔완료!")
+      alert("스캔완료!")
 			$('#verifier_host_data').show();
 			$('#host-table-name').text(HostInfo.name);
 			$('#host-table-id_number').text(HostInfo.id_number);

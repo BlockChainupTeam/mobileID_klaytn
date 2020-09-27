@@ -3,14 +3,25 @@ pragma experimental ABIEncoderV2;
 
 contract MobileID {
 
+
+     struct Info{
+        string name;
+        string date;
+        string addr;
+    }
+        
     struct keyRing{
         bool joined;
         string publicKey;
     }
+       
+    Info[] HostVerficationInfos;
+    uint8 public InfoSize;
 
     mapping ( address => keyRing ) public pks;     // 공개키보관
 
-    mapping ( address => string[] ) public records;
+    mapping ( address => Info[]) public records;
+
 
     bool private isIssuerKey = false;
     address public owner;
@@ -18,6 +29,21 @@ contract MobileID {
     constructor() public {
         owner = msg.sender;
     }
+
+    //인증 내역 저장  이름 , 날짜 , 저장할주소 ,본인주소
+    function setCertificationInfo(string name,string date,string _useraddr,address _addr) public{
+     records[_addr].push(Info(name,date,_useraddr));
+     InfoSize++;
+    }
+    
+    function getCertificationInfo(address _addr) public returns(Info[]) {
+     return records[_addr];
+    }
+    
+    function getCertificationSize() public returns(uint8){
+        return InfoSize;
+    }
+
     
     function setIssuerPublicKey(string _issuerPublicKey) public {
         pks[owner].publicKey = _issuerPublicKey;
@@ -49,13 +75,6 @@ contract MobileID {
         delete pks[_addr];
     }
 
-    function setRecords (address _addr, string _record) {
-        records[_addr].push(_record);
-    }
-
-    function getRecords (address _addr) returns (string[]){
-        return records[_addr];
-    }
 
     function getBalance() public view returns (uint) {
         return address(this).balance;
