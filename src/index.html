@@ -123,11 +123,12 @@
       IDCard 삭제하기
     </button>
   </div>
-  <div class="text-center" id="check_host_records">
+  <div class="text-center" id="check_records">
     <button type="button"
             class="btn btn-info pull-left"
-            id="BUtton_host_check_logs"
-            onclick="App.checkRecords()">
+            id="btn-check-logs"
+            data-target="#324"
+            >
       기록 확인하기
     </button>
   </div>
@@ -169,12 +170,15 @@
       IDCard 스캔
     </button>
   </div>
-  <div class="text-center" id="check_records">
+  <div class="text-center" id="verifier-record-container">
     <button type="button"
             class="btn btn-info pull-left"
             id="BUtton_host_check_records"
-            onclick="App.checkRecords()">
-      기록확인하기
+            data-toggle="modal"
+            data-target="#verifier-record-modal"
+            onclick="App.HostInfoPrint()"
+    >
+     인증내역 확인하기
     </button>
   </div>
 </div>
@@ -283,7 +287,7 @@
   </div>
   
   <div id="verifier_host_data" style="display: none">
-    <table class="table">
+    <table class="table" id="verifier-host-table">
       <thead>
         <tr>
           <th scope="col">이름</th>
@@ -292,11 +296,12 @@
         </tr>
       </thead>
       <tbody>
-        <tr>
+        <tr > 
           <td id="host-table-name">이름</td>
           <td id="host-table-id_number">주민등록번호</td>
           <td id="host-table-phone">전화번호</td>
         </tr>
+        
       </tbody>
     </table>
   </div>
@@ -449,6 +454,39 @@
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
 
+
+<!-- verifier 인증 내역  모달 구현  -->
+
+<div class="modal fade" tabindex="-1" role="dialog" id="verifier-record-modal"  >
+  <div class="modal-dialog modal-sm" >
+    <div class="modal-content">
+      <div class="host-info" style="display: block">
+        <h4 style="text-align: center; ">인증 내역 정보 </h4>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">이름</th>
+              <th scope="col">주소</th>
+              <th scope="col">시간</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="host-table-name"></td>
+              <td class="host-table-address"></td>
+              <td class="host-table-time"></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="form-group">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+      </div>
+    </div><!-- /.modal-content -->
+</div><!-- /.modal -->
 
 
 </div>

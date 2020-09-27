@@ -51,6 +51,7 @@ const App = {
   },
 
   cipherHostData: '',
+  hostaddress:'',
 
 
   /**
@@ -629,7 +630,8 @@ const App = {
       const HostEncrptyData=JSON.parse(this.cipherHostData);
      const IssuerPublicKey2 = await agContract.methods.getIssuerPublicKey().call(); //Issuer public Key 호출
      const HostPublickey2 = await agContract.methods.getPublicKey(HostEncrptyData.address).call();     //Host Public key 호출
-      const d1 = RSA.decryptData(HostPublickey2, HostEncrptyData.cipherHostData); // Host public key로 해독 
+     this.hostaddress=HostEncrptyData.address;  //호스트 주소 설정
+     const d1 = RSA.decryptData(HostPublickey2, HostEncrptyData.cipherHostData); // Host public key로 해독 
       const d2 = RSA.decryptData(IssuerPublicKey2, d1); //issuer publickey 키로 해독
       const HostDecrptyData=JSON.parse(d2);
 	  
@@ -886,6 +888,40 @@ const App = {
     }
   },
 
+  //오늘의 날짜를 구해주는함수
+  getTodaydate: function(){
+  let today = new Date();   
+
+  let year = today.getFullYear(); // 년도
+  let month = today.getMonth() + 1;  // 월
+  let date = today.getDate();  // 날짜
+  let day = today.getDay();  // 요일
+  
+  let todaydate=new string(year+'-'+month+'-'+date+'-'+day)
+  return todaydate
+
+},
+  //Verifier에서 Host 신원 인증 내역 보기
+  HostInfoPrint: async function(){
+    //본인의 주소를 통해 인증한 내역 정보가져오기
+    const HostInfo=await agContract.methods.getCertificationInfo(this.auth.address);
+    const HostInfoSize=await agContract.methods.getCertificationSize(this.auth.address)
+
+    let tbodyNode=document.querySelector('#verifier-host-table').children[1]
+    
+
+    //반복문 돌려서 가져온 정보를  테이블형태로 하나씩 추가
+    // for(){
+    // let tr=document.createElement("TR")
+    // let td=document.createElement("TD")
+
+    // tr.innerHTML="출력할 내용 "
+    // td.innerHTML="출력할내용"
+    // tbodyNode.appendChild(tr)
+    // tbodyNode.appendChild(td)
+    // }
+
+  }
 
 };
 
@@ -1007,12 +1043,20 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
         setCipherHost(code.data)
         const HostInfo=await App.decryptUserData()
         if(HostInfo){
-      alert("스캔완료!")
+        alert("료!")
+
+        //신원 인증 내역을 저장하는 부분  params : username,date,useraddress,로그인한 계정 address
+        await agContract.methods.setCertificationInfo(HostInfo.name,App.getTodaydate(),this.hostaddress,App.auth.address)
+
+
+        // 큐알 코드로 인증한 내역 화면에 출력
 			$('#verifier_host_data').show();
 			$('#host-table-name').text(HostInfo.name);
 			$('#host-table-id_number').text(HostInfo.id_number);
 			$('#host-table-phone').text(HostInfo.phone);
          $('#qrcode-scan-container').modal('hide');
+
+         // 카메라 끄기
         tmpstream.getTracks().forEach(function(track) {
           if (track.readyState == 'live' && track.kind === 'video') {
               track.stop();
