@@ -637,6 +637,7 @@ const App = {
 	  
     return HostDecrptyData;
     } catch (error) {
+      alert(this.cipherHostData)
 	   alert(error)
       return false;
     }
@@ -888,40 +889,34 @@ const App = {
     }
   },
 
-  //오늘의 날짜를 구해주는함수
-  getTodaydate: function(){
-  let today = new Date();   
-
-  let year = today.getFullYear(); // 년도
-  let month = today.getMonth() + 1;  // 월
-  let date = today.getDate();  // 날짜
-  let day = today.getDay();  // 요일
-  
-  let todaydate=new string(year+'-'+month+'-'+date+'-'+day)
-  return todaydate
-
-},
   //Verifier에서 Host 신원 인증 내역 보기
   HostInfoPrint: async function(){
     //본인의 주소를 통해 인증한 내역 정보가져오기
-    const HostInfo=await agContract.methods.getCertificationInfo(this.auth.address);
-    const HostInfoSize=await agContract.methods.getCertificationSize(this.auth.address)
-
-    let tbodyNode=document.querySelector('#verifier-host-table').children[1]
+    try {
+    $( '#info_table > tbody').empty();
+    const HostInfoSize=await agContract.methods.HostInfoSize(this.auth.address).call()
+      for(var i=0; i<HostInfoSize;i++){
+        const record = await agContract.methods.records(this.auth.address,i).call()
+        $('#info_table > tbody:last').append("<tr ><td>"+record.name+"</td><td>" + record.addr +"</td><td>"+record.date+"</td></tr>")
+      }
+    }
+    catch(error){
+      alert(error)
+    }
+    /** 
     
-
+    
     //반복문 돌려서 가져온 정보를  테이블형태로 하나씩 추가
-    // for(){
-    // let tr=document.createElement("TR")
-    // let td=document.createElement("TD")
-
-    // tr.innerHTML="출력할 내용 "
-    // td.innerHTML="출력할내용"
-    // tbodyNode.appendChild(tr)
-    // tbodyNode.appendChild(td)
-    // }
-
-  }
+    for(var i=0; i<HostInfoSize;i++){
+      let tr=document.createElement("TR")
+      let td=document.createElement("TD")
+      tr.innerHTML="출력할내용 "
+      td.innerHTML="출력할내용"
+      tbodyNode.appendChild(tr)
+      tbodyNode.appendChild(td)
+    }
+    */
+  },
 
 };
 
@@ -1043,30 +1038,46 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
         setCipherHost(code.data)
         const HostInfo=await App.decryptUserData()
         if(HostInfo){
-        alert("료!")
+          var spinner = App.showSpinner();
+          alert("스캔완료!")
+          $('#verifier_host_data').show();
+          $('#host-table-name').text(HostInfo.name);
+          $('#host-table-id_number').text(HostInfo.id_number);
+          $('#host-table-phone').text(HostInfo.phone);
+          $('#qrcode-scan-container').modal('hide');
+          
+          const todaydate = getTodayDate()
 
-        //신원 인증 내역을 저장하는 부분  params : username,date,useraddress,로그인한 계정 address
-        await agContract.methods.setCertificationInfo(HostInfo.name,App.getTodaydate(),this.hostaddress,App.auth.address)
-
-
-        // 큐알 코드로 인증한 내역 화면에 출력
-			$('#verifier_host_data').show();
-			$('#host-table-name').text(HostInfo.name);
-			$('#host-table-id_number').text(HostInfo.id_number);
-			$('#host-table-phone').text(HostInfo.phone);
-         $('#qrcode-scan-container').modal('hide');
-
-         // 카메라 끄기
-        tmpstream.getTracks().forEach(function(track) {
+          await agContract.methods.setCertificationInfo(HostInfo.name, todaydate, App.hostaddress, App.auth.address).send({
+            from: App.auth.address,
+            gas: '2500000',
+            value: 0
+          })
+              .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
+                console.log(`txHash: ${txHash}`);
+              })
+              .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
+                console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
+                alert("컨트랙트에 인증내역을 저장했습니다.");
+                spinner.stop();
+                location.reload();
+              })
+              .once('error', (error) => { // error가 발생한 경우
+                alert(error.message);
+              });
+          tmpstream.getTracks().forEach(function(track) {
           if (track.readyState == 'live' && track.kind === 'video') {
               track.stop();
-          }
-         });  
+          }});  
+          
+     
+
         }
         else{
           alert('스캔실패!')   
         }
       }
+
 
       else {
         outputMessage.hidden = false;
@@ -1076,7 +1087,23 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
     requestAnimationFrame(tick);
   }
   
-
+  function getTodayDate(){
+    try{
+    const today = new Date();   
+    const year = today.getFullYear(); // 년도
+    const month = today.getMonth() + 1;  // 월
+    const date = today.getDate();  // 날짜
+    const hour = today.getHours();  // 시간
+    const minute = today.getMinutes(); //분
+    const second = today.getSeconds(); //초
+    const todaydate= year+'년'+month+'월'+date+'일 '+hour+"시"+minute+"분"+second+"초"
+    return todaydate;
+    }
+    catch(error){
+      alert(error)
+    }
+    return todaydate;
+  }
 });
 
 

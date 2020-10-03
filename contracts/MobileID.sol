@@ -16,11 +16,11 @@ contract MobileID {
     }
        
     Info[] HostVerficationInfos;
-    uint8 public InfoSize;
 
     mapping ( address => keyRing ) public pks;     // 공개키보관
 
     mapping ( address => Info[]) public records;
+    mapping ( address => uint256) public HostInfoSize;
 
 
     bool private isIssuerKey = false;
@@ -33,15 +33,15 @@ contract MobileID {
     //인증 내역 저장  이름 , 날짜 , 저장할주소 ,본인주소
     function setCertificationInfo(string name,string date,string _useraddr,address _addr) public{
      records[_addr].push(Info(name,date,_useraddr));
-     InfoSize++;
+     HostInfoSize[_addr]++;
     }
     
     function getCertificationInfo(address _addr) public returns(Info[]) {
      return records[_addr];
     }
     
-    function getCertificationSize() public returns(uint8){
-        return InfoSize;
+    function getCertificationSize(address _addr) public returns(uint256){
+        return HostInfoSize[_addr];
     }
 
     
