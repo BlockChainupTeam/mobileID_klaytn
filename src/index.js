@@ -903,20 +903,22 @@ const App = {
     catch(error){
       alert(error)
     }
-    /** 
-    
-    
-    //반복문 돌려서 가져온 정보를  테이블형태로 하나씩 추가
-    for(var i=0; i<HostInfoSize;i++){
-      let tr=document.createElement("TR")
-      let td=document.createElement("TD")
-      tr.innerHTML="출력할내용 "
-      td.innerHTML="출력할내용"
-      tbodyNode.appendChild(tr)
-      tbodyNode.appendChild(td)
-    }
-    */
   },
+    //Host에서 Verifier 인증 내역 보기
+    VerifierInfoPrint: async function(){
+      //본인의 주소를 통해 인증한 내역 정보가져오기
+      try {
+      $( '#host_info_table > tbody').empty();
+      const VerifierInfoSize=await agContract.methods.HostInfoSize(this.auth.address).call()
+        for(var i=0; i<VerifierInfoSize;i++){
+          const record = await agContract.methods.records(this.auth.address,i).call()
+          $('#host_info_table > tbody:last').append("<tr ><td>"+record.name+"</td><td>" + record.addr +"</td><td>"+record.date+"</td></tr>")
+        }
+      }
+      catch(error){
+        alert(error)
+      }
+    },
 
 };
 
@@ -1048,6 +1050,8 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
           
           const todaydate = getTodayDate()
 
+
+          //Verifier측에서 인증 내역 저장 
           await agContract.methods.setCertificationInfo(HostInfo.name, todaydate, App.hostaddress, App.auth.address).send({
             from: App.auth.address,
             gas: '2500000',
@@ -1065,6 +1069,28 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
               .once('error', (error) => { // error가 발생한 경우
                 alert(error.message);
               });
+
+              //Host측에서 인증 내역 저장 => 타입오류 뜰수도 테스팅하면서 확인해바야됨
+              await agContract.methods.setCertificationInfo(HostInfo.name, todaydate, App.auth.address,App.hostaddress).send({
+                from: App.auth.address,
+                gas: '2500000',
+                value: 0
+              })
+                  .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
+                    console.log(`txHash: ${txHash}`);
+                  })
+                  .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
+                    console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
+                    alert("컨트랙트에 인증내역을 저장했습니다.");
+                    spinner.stop();
+                    location.reload();
+                  })
+                  .once('error', (error) => { // error가 발생한 경우
+                    alert(error.message);
+                  });
+
+
+
           tmpstream.getTracks().forEach(function(track) {
           if (track.readyState == 'live' && track.kind === 'video') {
               track.stop();

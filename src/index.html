@@ -35,7 +35,7 @@
               data-toggle="modal"
               data-target="#loginModal"
               onclick="App.user.userType = 'Issuer'">
-        Issuer 로그인
+        Issuer
       </button>
       <button type="button"
               class="btn btn-info pull-right"
@@ -47,7 +47,7 @@
                        $('#verifier_login').hide();
                        $('#verifier_SignIn_Password').hide();
                        ">
-        Host 로그인
+        Host
       </button>
       <button type="button"
               class="btn btn-info pull-right"
@@ -59,7 +59,7 @@
                        $('#host_login').hide();
                        $('#host_SignIn_Password').hide();
                        ">
-        Verifier 로그인
+        Verifier
       </button>
       <button type="button"
               class="btn btn-info pull-right"
@@ -127,9 +127,11 @@
     <button type="button"
             class="btn btn-info pull-left"
             id="btn-check-logs"
-            data-target="#324"
+            data-target="#host-record-modal"
+            data-toggle="modal"
+            onclick="App.VerifierInfoPrint()"
             >
-      기록 확인하기
+      신원 인증 기록 확인
     </button>
   </div>
 </div>
@@ -488,6 +490,40 @@
     </div><!-- /.modal-content -->
 </div><!-- /.modal -->
 
+
+
+<!-- Host 인증 내역  모달 구현  -->
+
+<div class="modal fade" tabindex="-1" role="dialog" id="host-record-modal"  >
+  <div class="modal-dialog modal-sm" >
+    <div class="modal-content">
+      <div class="host-info" style="display: block">
+        <h4 style="text-align: center; ">인증 내역 정보 </h4>
+        <table class="table" id="host_info_table">
+          <thead>
+            <tr>
+              <th scope="col">기업이름</th>
+              <th scope="col">주소</th>
+              <th scope="col">시간</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="host-table-name" id="info_table_name"></td>
+              <td class="host-table-address" id="info_table_address"></td>
+              <td class="host-table-time"id="info_table_time"></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="form-group">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+      </div>
+    </div><!-- /.modal-content -->
+</div><!-- /.modal -->
 
 </div>
 </div>
