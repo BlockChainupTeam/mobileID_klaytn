@@ -19,23 +19,20 @@
 <div class="container">
   <div class="row">
     <div class="col-md-8 col-md-offset-2">
-      <h1 class="text-center" id="issuer_notice"
-          style="display: none;
-                 color: red;
-                 font-weight: bold; ">
-        !!!관리자 계정입니다!!!
-      </h1>
-      <h1 class="text-center">모바일 신분증 </h1>
-
-      <h3 class="text-center">로그인화면</h3>
-      
+      <br>
+      <div class="text-center" 
+      style="border:2px solid black; padding:0px; 
+      background-color:skyblue;border-radius:0.5em;
+      -moz-border-radius: 0.5em;
+      -webkit-border-radius: 0.5em;">
+        <h1 class="text-center" style="font-family: Nanum Gothic; font-weight: bold;color: white;-webkit-text-stroke: 1px #000;">모바일 신분증 </h1></div><br>
       <button type="button"
               class="btn btn-info pull-right"
               id="issuerLogin"
               data-toggle="modal"
               data-target="#loginModal"
               onclick="App.user.userType = 'Issuer'">
-        Issuer 로그인
+        Issuer
       </button>
       <button type="button"
               class="btn btn-info pull-right"
@@ -43,11 +40,12 @@
               onclick="App.user.userType = 'Host';
                        $('#host_signIn').show();
                        $('#host_login').show();
+                       $('#blank').hide();
                        $('#verifier_signIn').hide();
                        $('#verifier_login').hide();
                        $('#verifier_SignIn_Password').hide();
                        ">
-        Host 로그인
+        Host
       </button>
       <button type="button"
               class="btn btn-info pull-right"
@@ -55,50 +53,83 @@
               onclick="App.user.userType = 'Verifier';
                        $('#verifier_signIn').show();
                        $('#verifier_login').show();
+                       
+                       $('#blank').hide();
                        $('#host_signIn').hide();
                        $('#host_login').hide();
                        $('#host_SignIn_Password').hide();
                        ">
-        Verifier 로그인
+        Verifier
       </button>
       <button type="button"
-              class="btn btn-info pull-right"
+              class="btn btn-warning pull-left"
               id="logout"
               style="display: none;"
               onclick="App.handleLogout()">
         로그아웃
       </button>
+      <br><br><div id="blank" display="block"><br><br></div>
+      
+  <!-- Host login session 컨테이너 -->
+  <div class="container" id="container_host_login">
+    <div class="text-center" id="host_signIn" style="display: none;">
       <button type="button"
-              class="btn btn-info pull-right"
+              class="btn btn-success pull-right"
+              id="Button_host_signIn"
+              onclick="$('#host_login').hide();
+                      $('#host_SignIn_Password').show();">
+        Host 회원가입
+      </button>
+    </div>
+    <div class="text-center" id="host_login" style="display: none;">
+      <button type="button"
+              class="btn btn-success pull-right"
+              id="Button_host_login"
+              data-toggle="modal" data-target="#loginModal">
+        Host 로그인
+      </button>
+    </div>
+  </div>
+
+  <!-- Verifier login session 컨테이너 (9월2일 추가)-->
+
+  <div class="container" id="container-verifier-login">
+    <div class="text-center" id="verifier_signIn" style="display: none;">
+      <button type="button"
+              class="btn btn-success pull-right"
+              id="Button_verifier_signIn"
+              onclick="$('#verifier_SignIn_Password').show();">
+        Verifier 회원가입
+      </button>
+    </div>
+
+    <div class="text-center" id="verifier_login" style="display: none;">
+      <button type="button"
+              class="btn btn-success pull-right"
+              id="Button_verifier_login"
+              data-toggle="modal" data-target="#loginModal">
+        Verifier 로그인
+      </button>
+    </div>
+  </div>
+
+      <br>
+      <button type="button"
+              class="btn btn-secondary btn-sm"
               id="Button_issuer_key"
               style="display: none;"
               onclick="App.setIssuerKey()">
         Issuer 키 발급받기
-      </button>
-      <div class="text-center" id="address"></div>
-      <div class="text-center" id="HostPublicKey"></div>
+      </button><br>
+      <h4 class="text-center" id="issuer_notice"
+          style="display: none;
+                 color: red;
+                 font-weight: bold; ">
+        !!!관리자 계정입니다!!!
+      </h4>
+      <div class="text-center" id="address" style="border:2px solid white; padding:2px;white-space:pre-line;word-break:break-all;"></div>
+      <br><br>
     </div>
-  </div>
-</div>
-
-<!-- Host login session 컨테이너 -->
-<div class="container" id="container_host_login">
-  <div class="text-center" id="host_signIn" style="display: none;">
-    <button type="button"
-            class="btn btn-info pull-left"
-            id="Button_host_signIn"
-            onclick="$('#host_login').hide();
-                     $('#host_SignIn_Password').show();">
-      Host 회원가입
-    </button>
-  </div>
-  <div class="text-center" id="host_login" style="display: none;">
-    <button type="button"
-            class="btn btn-info pull-left"
-            id="Button_host_login"
-            data-toggle="modal" data-target="#loginModal">
-      Host 로그인
-    </button>
   </div>
 </div>
 
@@ -107,78 +138,60 @@
 <div class="container" id="container_host_function" style="display: none;">
   <div class="text-center" id="send_IDCard">
     <button type="button"
-            class="btn btn-info pull-left"
+            class="btn btn-info "
             id="Button_host_send_idCard"
             data-toggle="modal"
             data-target="#qrcode-modal"
             onclick="App.sendIDCard()">
-      IDCard 전달하기 - QR코드 생성
+        QR 코드 생성
+    </button>
+  </div><br>
+  <div class="text-center" id="check_records">
+    <button type="button"
+            class="btn btn-info "
+            id="btn-check-logs"
+            data-target="#host-record-modal"
+            data-toggle="modal"
+            onclick="App.VerifierInfoPrint()">
+      신원 인증 내역
     </button>
   </div>
-  <div class="text-center" id="delete_IDCard">
+  <br>
+  <div class="text-center" id="delete_IDCard" style="position: fixed; bottom: 10%; right: 10%;">
     <button type="button"
-            class="btn btn-info pull-left"
+            class="btn btn-danger btn-sm"
             id="BUtton_host_delete_IDCard"
-            onclick="App.deleteIDCard()">
+            onclick="App.deleteIDCard()"
+            >
       IDCard 삭제하기
     </button>
   </div>
-  <div class="text-center" id="check_records">
-    <button type="button"
-            class="btn btn-info pull-left"
-            id="btn-check-logs"
-            data-target="#324"
-            >
-      기록 확인하기
-    </button>
-  </div>
 </div>
 
 
 
-<!-- Verifier login session 컨테이너 (9월2일 추가)-->
-
-<div class="container" id="container-verifier-login">
-  <div class="text-center" id="verifier_signIn" style="display: none;">
-    <button type="button"
-            class="btn btn-info pull-left"
-            id="Button_verifier_signIn"
-            onclick="$('#verifier_SignIn_Password').show();">
-      Verifier 회원가입
-    </button>
-  </div>
-
-  <div class="text-center" id="verifier_login" style="display: none;">
-    <button type="button"
-            class="btn btn-info pull-left"
-            id="Button_verifier_login"
-            data-toggle="modal" data-target="#loginModal">
-      Verifier 로그인
-    </button>
-  </div>
-</div>
 
 <!-- verifier function session 컨테이너  9월 2일 추가--->
 <div class="container" id="container_verifier_function" style="display: none;">
   <div class="text-center" id="scan_IDCard">
     <button type="button"
-            class="btn btn-info pull-left"
+            class="btn btn-info "
             id="button-host-IDCard-scan"
             data-toggle="modal"
             data-target="#qrcode-scan-container"
             >
-      IDCard 스캔
+      QR 코드 스캔
     </button>
-  </div>
+  </div><br>
   <div class="text-center" id="verifier-record-container">
     <button type="button"
-            class="btn btn-info pull-left"
+            class="btn btn-info "
             id="BUtton_host_check_records"
             data-toggle="modal"
             data-target="#verifier-record-modal"
             onclick="App.HostInfoPrint()"
     >
-     인증내역 확인하기
+     신원 인증 내역
     </button>
   </div>
 </div>
@@ -253,7 +266,7 @@
     </button>
   </p>
   <p>
-    <button type="button" class="btn btn-info pull-left" id="Button_Issuer_Bring_IDCard" style="display: none;"
+    <button type="button" class="btn btn-primary pull-left" id="Button_Issuer_Bring_IDCard" style="display: none;"
             data-toggle="modal" data-target="#IDCardModal">
       IDCard 입력하기
     </button>
@@ -267,7 +280,7 @@
     <p>주민등록번호: <input type="text" id="host_id_front" size="10" maxlength="6">
       -<input type="password" id="host_id_rear" size="10" maxlength="7"></p>
     <p>전화번호: <input type="tel" id="host_phone" size="20"></p>
-    <button type="button" class="btn btn-info pull-left" id="host_input_yes"
+    <button type="button" class="btn btn-success pull-left" id="host_input_yes"
             data-toggle="modal" data-target="#privateKeyModal">확인</button>
   </form>
   <form id="verifier_data_input" style="display: none">
@@ -275,7 +288,7 @@
     <p>기업이름: <input type="text" id="verifier_name"></p>
     <p>등록번호: <input type="text" id="verifier_id" size="10" maxlength="6">
     <p>전화번호: <input type="tel" id="verifier_phone" size="20"></p>
-    <button type="button" class="btn btn-info pull-left" id="verifier_input_yes"
+    <button type="button" class="btn btn-success pull-left" id="verifier_input_yes"
             data-toggle="modal" data-target="#privateKeyModal">확인</button>
   </form>
 </div>
@@ -305,11 +318,6 @@
       </tbody>
     </table>
   </div>
-  
-  <br></br>
-  <button type="button" style="display: none;" class="btn btn-info pull-center" id="host_session_out" data-toggle="modal"
-          data-target="#decryptModal">- 임시 - 데이터 복호화 확인</button>
-          <p style="display: none;" id="tooltip"> (verifier에게 Hostdata가 전달되었을 시) </p>
           
 </div>
 
@@ -458,16 +466,18 @@
 <!-- verifier 인증 내역  모달 구현  -->
 
 <div class="modal fade" tabindex="-1" role="dialog" id="verifier-record-modal"  >
-  <div class="modal-dialog modal-sm" >
-    <div class="modal-content">
+  <div class="modal-dialog modal-sm" style="max-width: 100%; width: auto; display: table";>
+    <div class="modal-content" >
       <div class="host-info" style="display: block">
         <h4 style="text-align: center; ">인증 내역 정보 </h4>
+
+        <div class="table-responsive">
         <table class="table" id="info_table">
           <thead>
             <tr>
-              <th scope="col">이름</th>
-              <th scope="col">주소</th>
-              <th scope="col">시간</th>
+              <th >이름</th>
+              <th >주소</th>
+              <th >시간</th>
             </tr>
           </thead>
           <tbody>
@@ -478,6 +488,7 @@
             </tr>
           </tbody>
         </table>
+      </div>
         </div>
         <div class="form-group">
         </div>
@@ -489,6 +500,42 @@
 </div><!-- /.modal -->
 
 
+
+<!-- Host 인증 내역  모달 구현  -->
+
+<div class="modal fade" tabindex="-1" role="dialog" id="host-record-modal"  >
+  <div class="modal-dialog modal-sm" style="max-width: 100%; width: auto; display: table;" >
+    <div class="modal-content">
+      <div class="host-info" style="display: block">
+        <h4 style="text-align: center; ">인증 내역 정보 </h4>
+        <div class="table-responsive">
+        <table class="table" id="host_info_table">
+          <thead>
+            <tr>
+              <th >이름</th>
+              <th >주소</th>
+              <th >시간</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="host-table-name" id="info_table_name"></td>
+              <td class="host-table-address" id="info_table_address"></td>
+              <td class="host-table-time"id="info_table_time"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+        </div>
+        <div class="form-group">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+      </div>
+    </div><!-- /.modal-content -->
+</div><!-- /.modal -->
+
 </div>
 </div>
 </body>
@@ -497,6 +544,78 @@
 </html>
 
 <style>
+
+
+table { 
+  width: 100%; 
+  border-collapse: collapse; 
+}
+/* Zebra striping */
+tr:nth-of-type(odd) { 
+  background: #eee; 
+}
+th { 
+  background: #333; 
+  color: white; 
+  font-weight: bold; 
+}
+td, th { 
+  padding: 6px; 
+  border: 1px solid #ccc; 
+  text-align: left; 
+}
+
+@media 
+only screen and (max-width: 760px),
+(min-device-width: 768px) and (max-device-width: 1024px)  {
+
+	/* Force table to not be like tables anymore */
+	table, thead, tbody, th, td, tr { 
+		display: block; 
+	}
+	
+	/* Hide table headers (but not display: none;, for accessibility) */
+	thead tr { 
+		position: absolute;
+		top: -9999px;
+		left: -9999px;
+	}
+	
+	tr { border: 1px solid #ccc; }
+	
+	td { 
+		/* Behave  like a "row" */
+		border: none;
+		border-bottom: 1px solid #eee; 
+		position: relative;
+		padding-left: 50%; 
+	}
+	
+	td:before { 
+		/* Now like a table header */
+		position: absolute;
+		/* Top/left values mimic padding */
+		top: 6px;
+		left: 6px;
+		width: 45%; 
+		padding-right: 10px; 
+		white-space: nowrap;
+	}
+	
+	/*
+	Label the data
+	*/
+}
+
+
+#canvas { 
+   width:100%;
+   max-width:320px;
+   height:auto;
+}
+
+
+
   .yellow-box {
     background-color: #FFC;
     padding: 2rem;

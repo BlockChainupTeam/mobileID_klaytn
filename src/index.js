@@ -29,7 +29,8 @@ const App = {
     keystore: '',
     password: '',
     privateKey: '',
-    address: ''
+    address: '',
+    name: '',
     //개인주소 추가
   },
 
@@ -91,7 +92,6 @@ const App = {
     $('#logout').show();
 
     $('#host_session_out').show(); //TODO: 임시로 만들어놓음
-    $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
 
     this.user.userType = sessionStorage.getItem("UserType");
 
@@ -101,7 +101,8 @@ const App = {
     } else {
       this.userUI(walletInstance);
     }
-    $('#address').append('<br>' + '<p>' + '내 계정주소: ' + this.auth.address + '</p>');
+    $('#address').attr('style','border:2px solid skyblue; padding:2px;white-space:pre-line;word-break:break-all;')
+    $('#address').append('<h5>' + '주소:' + this.auth.address + '</h5>');
   },
 
   /**
@@ -112,7 +113,6 @@ const App = {
   userUI: async function () {
     $('#host_session_out').show(); //TODO: 임시로 만들어놓음
     $('#tooltip').show(); //TODO: 임시로 만들어놓음
-    $('#HostPublicKey').append("Host 공개키 : " + await agContract.methods.getPublicKey(this.auth.address).call()); //TODO: 공개키 보여줄 필요 없음
     if(this.user.userType === 'Host'){
       this.hostUI();
     } else if(this.user.userType === 'Verifier' ){
@@ -143,7 +143,7 @@ const App = {
     const JSONhostdata=JSON.stringify(hostdata)
  
     QRCode.toDataURL(JSONhostdata, function (err, url) {
-      $('#qrcode-content').append('<img src="' + url + '" width="400" height="400"/> ');
+      $('#qrcode-content').append('<img src="' + url + '" width="100%" height="auto"/> ');
       tmp=url;
     })
     this.user.qrcode=tmp;
@@ -232,6 +232,7 @@ const App = {
         Keystore: userKeystore,
         IssuerSign: '',
         UserSign: '',
+        Name: '',
       };
       this.fileDownload(JSON.stringify(IDCard, null, 8), "VerifierIDCard", "application/json"); // 최초의 IDCard
       alert("Verifier IDCard가 발급되었습니다.")
@@ -315,6 +316,7 @@ const App = {
           } else {
             this.auth.keystore = keystore;
             this.auth.address = keystore.address;
+            sessionStorage.setItem('Name', this.IDCard.Name)
             sessionStorage.setItem('UserType', this.user.userType);
             sessionStorage.setItem('Cipher',IDCard.Cipher);
             
@@ -364,7 +366,6 @@ const App = {
     /* 재발급 받는 방향도 고려해봐야할듯 */
     if (isIssuerPublicKey) { // 이미 키가 저장되어 있다면
       $('#Button_issuer_key').show().append("!재발급!");
-      $('#IssuerPublicKey').append("Issuer 공개키 : " + await agContract.methods.getIssuerPublicKey().call()); //TODO: 필요없으면 제거해도 됨
       $('#data_input').show();
     } else { // 키가 저장되어 있지 않다면
       alert("키를 발급받으세요!");
@@ -388,22 +389,23 @@ const App = {
     const userData = {
       name: this.user.name,
       id_number: this.user.id_number,
-      phone: this.user.phone
+      phone: this.user.phone,
     }
 
     const cipher = RSA.encryptData(privateKey, userData);
     const issuerSign = RSA.sign(privateKey, userData);
-
-    const IDCard = {
-      UserType: this.user.userType,
-      Cipher: cipher,
-      Keystore: this.auth.keystore,
-      IssuerSign: issuerSign,
-      UserSign: '',
-    };
-
+      const IDCard = {
+        UserType: this.user.userType,
+        Cipher: cipher,
+        Keystore: this.auth.keystore,
+        IssuerSign: issuerSign,
+        UserSign: '',
+        Name: this.user.name,
+      };
+    if(this.user.userType == "Host"){
+      IDCard.Name = ''
+    }
     await this.fileDownload(JSON.stringify(IDCard, null, 8), "IDCard-" + this.user.name, "application/json");
-    alert(this.auth.keystore.address);
     
     cav.klay.sendTransaction({
     from: await this.callOwner(),
@@ -416,9 +418,8 @@ const App = {
         .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
           console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
           spinner.stop(); // loading ui 종료
-          alert(this.auth.keystore.address+"에게 100000000000000000peb (0.1Klay) 송급");
           $('#privateKeyModal').modal('hide');
-    	  alert("증이 발급되었습니다!!");
+    	  alert("모바일 신분증이 발급되었습니다. (0.1 Klay 송금)");
           location.reload();
           //서명시 적당량 송금해주는 방식 -- 가스비 위임 트랜잭션 고려해봐야함
         })
@@ -637,7 +638,6 @@ const App = {
 	  
     return HostDecrptyData;
     } catch (error) {
-      alert(this.cipherHostData)
 	   alert(error)
       return false;
     }
@@ -719,7 +719,8 @@ const App = {
             Cipher: cipherWithUsers,
             Keystore: this.IDCard.Keystore,
             IssuerSign: this.IDCard.IssuerSign,
-            UserSign: RSA.sign(keypair.privateKey, cipherWithUsers) //TODO: data부분 확인
+            UserSign: RSA.sign(keypair.privateKey, cipherWithUsers), //TODO: data부분 확인
+            Name: this.IDCard.Name,
           }
 
 
@@ -730,6 +731,7 @@ const App = {
           await this.fileDownload(JSON.stringify(keypair.privateKey, null, 8), "PrivateKey-" + this.IDCard.Keystore.address, "application/json"); // 최초의 IDCard
 
           await this.postPublicKeyOnContract(this.auth.keystore.address, keypair.publicKey);
+          this.removeWallet();
         }
         location.reload();
       } catch (e) {
@@ -903,20 +905,22 @@ const App = {
     catch(error){
       alert(error)
     }
-    /** 
-    
-    
-    //반복문 돌려서 가져온 정보를  테이블형태로 하나씩 추가
-    for(var i=0; i<HostInfoSize;i++){
-      let tr=document.createElement("TR")
-      let td=document.createElement("TD")
-      tr.innerHTML="출력할내용 "
-      td.innerHTML="출력할내용"
-      tbodyNode.appendChild(tr)
-      tbodyNode.appendChild(td)
-    }
-    */
   },
+    //Host에서 Verifier 인증 내역 보기
+    VerifierInfoPrint: async function(){
+      //본인의 주소를 통해 인증한 내역 정보가져오기
+      try {
+      $( '#host_info_table > tbody').empty();
+      const VerifierInfoSize=await agContract.methods.HostInfoSize(this.auth.address).call()
+        for(var i=0; i<VerifierInfoSize;i++){
+          const record = await agContract.methods.records(this.auth.address,i).call()
+          $('#host_info_table > tbody:last').append("<tr ><td>"+record.name+"</td><td>" + record.addr +"</td><td>"+record.date+"</td></tr>")
+        }
+      }
+      catch(error){
+        alert(error)
+      }
+    },
 
 };
 
@@ -1039,6 +1043,7 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
         const HostInfo=await App.decryptUserData()
         if(HostInfo){
           var spinner = App.showSpinner();
+          var VerifierName = sessionStorage.getItem('Name');
           alert("스캔완료!")
           $('#verifier_host_data').show();
           $('#host-table-name').text(HostInfo.name);
@@ -1048,6 +1053,8 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
           
           const todaydate = getTodayDate()
 
+
+          //Verifier측에서 인증 내역 저장 
           await agContract.methods.setCertificationInfo(HostInfo.name, todaydate, App.hostaddress, App.auth.address).send({
             from: App.auth.address,
             gas: '2500000',
@@ -1058,13 +1065,17 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
               })
               .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
                 console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
-                alert("컨트랙트에 인증내역을 저장했습니다.");
+                alert("컨트랙트에 Verifier 인증내역을 저장했습니다.");
                 spinner.stop();
-                location.reload();
+                HostTableContract(VerifierName,todaydate);
               })
               .once('error', (error) => { // error가 발생한 경우
                 alert(error.message);
               });
+
+              //Host측에서 인증 내역 저장 => 타입오류 뜰수도 테스팅하면서 확인해바야됨
+
+
           tmpstream.getTracks().forEach(function(track) {
           if (track.readyState == 'live' && track.kind === 'video') {
               track.stop();
@@ -1086,7 +1097,26 @@ document.querySelector('#button-host-IDCard-scan').addEventListener('click', fun
     }
     requestAnimationFrame(tick);
   }
-  
+  async function HostTableContract(VerifierName,todaydate){
+    var spinner = App.showSpinner();
+    await agContract.methods.setCertificationInfo(VerifierName, todaydate, App.auth.address,App.hostaddress).send({
+      from: App.auth.address,
+      gas: '2500000',
+      value: 0
+    })
+        .once('transactionHash', (txHash) => { // transaction hash로 return 받는 경우
+          console.log(`txHash: ${txHash}`);
+        })
+        .once('receipt', (receipt) => { // receipt(영수증)으로 return받는 경우
+          console.log(`(#${receipt.blockNumber})`, receipt); // 어느 블록에 추가되었는지 확인할 수 있음
+          alert("컨트랙트에 Host 인증내역을 저장했습니다.");
+          spinner.stop();
+          location.reload();
+        })
+        .once('error', (error) => { // error가 발생한 경우
+          alert(error.message);
+        });
+  }
   function getTodayDate(){
     try{
     const today = new Date();   
